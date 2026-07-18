@@ -1,0 +1,2 @@
+# Non-secret local development configuration.
+NEXTJS_ENV=development
