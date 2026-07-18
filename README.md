@@ -44,6 +44,17 @@ Open `/menu/sabay-kitchen` for the public menu and `/admin/menu-items` for the a
 
 The manual GitHub deployment workflow requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. The normal verification workflow needs no secrets.
 
+### Cloudflare Git integration
+
+For Workers Builds connected directly to GitHub, configure these commands in the Cloudflare dashboard:
+
+```text
+Build command:  npm run cf:build
+Deploy command: npx wrangler deploy
+```
+
+`npm run build` only creates the standard Next.js output. `npm run cf:build` additionally creates the `.open-next` Worker bundle required by Wrangler deployment.
+
 ## Quality checks
 
 ```powershell
