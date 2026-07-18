@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+		"build": "next build --webpack",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@opennextjs/cloudflare": "^1.19.9",
+    "@opennextjs/cloudflare": "1.19.11",
     "@tanstack/react-form": "^1.33.2",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-table": "^8.21.3",

@@ -1,3 +1,3 @@
 import {NextResponse} from "next/server";import {z} from "zod";import {createStaffUser,listStaffUsers} from "@/lib/server/menu-repository";
-export const runtime="edge";const schema=z.object({email:z.string().email().max(254),displayName:z.string().trim().min(2).max(100),role:z.enum(['owner','manager','editor','viewer'])});
+const schema=z.object({email:z.string().email().max(254),displayName:z.string().trim().min(2).max(100),role:z.enum(['owner','manager','editor','viewer'])});
 export async function GET(){return NextResponse.json(await listStaffUsers())}export async function POST(request:Request){const data=schema.safeParse(await request.json());if(!data.success)return NextResponse.json({error:'Enter a valid email, name, and role.'},{status:400});try{return NextResponse.json(await createStaffUser(data.data),{status:201})}catch{return NextResponse.json({error:'That email already has access.'},{status:409})}}

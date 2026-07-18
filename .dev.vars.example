@@ -1,2 +1,1 @@
-# Non-secret local development configuration.
-NEXTJS_ENV=development
+# Intentionally empty. Add local-only secrets here; never use it to set runtime modes.
