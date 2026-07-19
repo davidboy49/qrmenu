@@ -155,13 +155,21 @@ export default function PublicMenuClient({ menu, locale, slug }: PublicMenuClien
 							</h1>
 						</div>
 
-						<Link
-							href={`/menu/${slug}?lang=${locale === "en" ? "km" : "en"}`}
-							className="inline-flex h-9 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 text-xs font-semibold text-stone-700 shadow-xs transition-all hover:bg-stone-50 active:scale-95 shrink-0"
-						>
-							<Globe className="size-3.5 text-stone-500" />
-							{locale === "en" ? "ខ្មែរ" : "English"}
-						</Link>
+						<div className="flex items-center gap-2 shrink-0">
+							<Link
+								href={`/menu/${slug}?lang=${locale === "en" ? "km" : "en"}`}
+								className="inline-flex h-9 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3.5 text-xs font-semibold text-stone-700 shadow-xs transition-all hover:bg-stone-50 active:scale-95 shrink-0"
+							>
+								<Globe className="size-3.5 text-stone-500" />
+								{locale === "en" ? "ខ្មែរ" : "English"}
+							</Link>
+							<Link
+								href="/admin/menu-items"
+								className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3.5 text-xs font-semibold text-primary shadow-xs transition-all hover:bg-primary/10 active:scale-95 shrink-0"
+							>
+								<span>Admin View</span>
+							</Link>
+						</div>
 					</div>
 				</div>
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { Search } from "lucide-react";
+import Link from "next/link";
+import { Search, Globe } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import {
@@ -43,6 +44,14 @@ export function AdminHeader() {
 				<Search aria-hidden="true" />
 				<span>Search anything...</span>
 				<kbd className="ml-auto rounded border bg-muted px-1.5 py-0.5 text-[10px] font-medium">Ctrl K</kbd>
+			</Button>
+			<Button
+				variant="outline"
+				render={<Link href="/menu/sabay-kitchen" />}
+				className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold shrink-0"
+			>
+				<Globe className="size-3.5 text-stone-500" />
+				<span>Customer View</span>
 			</Button>
 		</header>
 	);

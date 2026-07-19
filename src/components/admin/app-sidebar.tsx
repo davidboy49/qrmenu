@@ -9,6 +9,7 @@ import {
 	History,
 	ImageIcon,
 	LayoutGrid,
+	LogOut,
 	MapPin,
 	QrCode,
 	Settings,
@@ -128,15 +129,31 @@ export function AppSidebar() {
 			<SidebarFooter className="border-t p-3">
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size="lg" className="min-h-11" tooltip="Sokha Dara">
-							<Avatar className="size-8 rounded-lg">
-								<AvatarFallback className="rounded-lg bg-primary/10 text-primary">SD</AvatarFallback>
-							</Avatar>
-							<span className="grid flex-1 text-left leading-tight">
-								<span className="truncate font-medium">Sokha Dara</span>
-								<span className="truncate text-xs text-muted-foreground">Owner</span>
-							</span>
-						</SidebarMenuButton>
+						<div className="flex items-center justify-between gap-1 w-full group-data-[collapsible=icon]:flex-col">
+							<SidebarMenuButton size="lg" className="min-h-11 flex-1 pointer-events-none" tooltip="Sokha Dara">
+								<Avatar className="size-8 rounded-lg">
+									<AvatarFallback className="rounded-lg bg-primary/10 text-primary">SD</AvatarFallback>
+								</Avatar>
+								<span className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
+									<span className="truncate font-medium">Sokha Dara</span>
+									<span className="truncate text-xs text-muted-foreground">Owner</span>
+								</span>
+							</SidebarMenuButton>
+							<button
+								onClick={async () => {
+									if (confirm("Are you sure you want to sign out?")) {
+										const res = await fetch("/api/auth/logout", { method: "POST" });
+										if (res.ok) {
+											window.location.href = "/login";
+										}
+									}
+								}}
+								className="flex size-9 items-center justify-center rounded-lg text-stone-500 hover:bg-stone-100 hover:text-stone-900 active:scale-95 transition-all shrink-0"
+								title="Sign out"
+							>
+								<LogOut className="size-4" />
+							</button>
+						</div>
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarFooter>
