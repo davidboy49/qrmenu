@@ -66,14 +66,8 @@ export async function POST(request: Request) {
 			restaurantId = await getRestaurantContextId();
 		}
 
-		let emailVal = data.data.email?.trim() || "";
-		if (!emailVal) {
-			const base = data.data.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
-			emailVal = base || `user.${Math.floor(Math.random() * 10000)}`;
-		}
-
 		const result = await createStaffUserWithPassword({
-			email: emailVal,
+			email: data.data.email,
 			displayName: data.data.displayName,
 			role: data.data.role,
 			restaurantIds: [restaurantId],

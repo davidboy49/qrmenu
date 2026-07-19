@@ -622,7 +622,7 @@ export async function listAllStaffUsers(limit?: number, offset?: number): Promis
 }
 
 export async function createStaffUserWithPassword(input: {
-	email: string;
+	email?: string | null;
 	displayName: string;
 	role: "owner" | "manager" | "editor" | "viewer";
 	restaurantIds: string[];
@@ -632,12 +632,20 @@ export async function createStaffUserWithPassword(input: {
 	const now = timestamp();
 	const statements: any[] = [];
 	
+	let emailVal = input.email?.trim() || "";
+	if (!emailVal) {
+		const base = input.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+		const suffix = Math.floor(1000 + Math.random() * 9000);
+		emailVal = base ? `${base}.${suffix}` : `user.${suffix}`;
+	}
+	emailVal = emailVal.toLowerCase();
+
 	// Preserve existing password if no new password is provided during updates
 	let finalPassword = input.password || null;
 	if (!input.password) {
 		const existing = await db
 			.prepare("SELECT password FROM staff_users WHERE email = ? AND password IS NOT NULL LIMIT 1")
-			.bind(input.email.toLowerCase())
+			.bind(emailVal)
 			.first<{ password: string }>();
 		if (existing) {
 			finalPassword = existing.password;
@@ -645,17 +653,17 @@ export async function createStaffUserWithPassword(input: {
 	}
 
 	// Delete any existing user rows with this email first to allow updating/overwriting their mappings!
-	statements.push(db.prepare("DELETE FROM staff_users WHERE email = ?").bind(input.email.toLowerCase()));
+	statements.push(db.prepare("DELETE FROM staff_users WHERE email = ?").bind(emailVal));
 
 	for (const restId of input.restaurantIds) {
 		const userId = crypto.randomUUID();
 		statements.push(
 			db.prepare("INSERT INTO staff_users (id, restaurant_id, email, display_name, role, status, password, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?)")
-				.bind(userId, restId, input.email.toLowerCase(), input.displayName, input.role, finalPassword, now, now)
+				.bind(userId, restId, emailVal, input.displayName, input.role, finalPassword, now, now)
 		);
 		statements.push(
 			db.prepare("INSERT INTO audit_events (id, restaurant_id, action, entity_type, entity_id, metadata_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-				.bind(crypto.randomUUID(), restId, 'staff.invited', 'staff_user', userId, JSON.stringify({ email: input.email, role: input.role }), now)
+				.bind(crypto.randomUUID(), restId, 'staff.invited', 'staff_user', userId, JSON.stringify({ email: emailVal, role: input.role }), now)
 		);
 	}
 
