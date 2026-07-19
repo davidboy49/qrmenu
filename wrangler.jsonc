@@ -10,7 +10,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "qrmenu",
 	"main": ".open-next/worker.js",
-	"compatibility_date": "2026-07-18",
+	"compatibility_date": "2026-07-19",
 	"compatibility_flags": [
 		"nodejs_compat",
 		"global_fetch_strictly_public"
@@ -44,6 +44,12 @@
 			// see https://opennext.js.org/cloudflare/caching
 			"binding": "WORKER_SELF_REFERENCE",
 			"service": "qrmenu"
+		}
+	],
+	"routes": [
+		{
+			"pattern": "qrmenu.fearlessonline.shop",
+			"custom_domain": true
 		}
 	],
 	"observability": {
