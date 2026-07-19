@@ -17,6 +17,8 @@ import {
 	Tag,
 	Users,
 	UtensilsCrossed,
+	Building2,
+	GitBranch,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -73,39 +75,87 @@ const navigationGroups = [
 	},
 ];
 
-export function AppSidebar() {
+interface AppSidebarProps {
+	session: {
+		role: string;
+		displayName: string;
+		email: string;
+		restaurants?: any[];
+	} | null;
+	activeContext: {
+		restaurantId: string;
+		branchId: string;
+		restaurantName: string;
+		restaurantSlug: string;
+		branchName: string;
+		branchSlug: string;
+	};
+}
+
+export function AppSidebar({
+	session,
+	activeContext,
+}: AppSidebarProps) {
 	const pathname = usePathname();
+
+	const isSuperAdmin = session?.role === "admin";
+
+	// Determine sidebar navigation groups based on role
+	const currentGroups = isSuperAdmin
+		? [
+				{
+					label: "Master Realm",
+					items: [{ label: "Restaurants & Branches", href: "/admin/restaurants", icon: Building2 }],
+				},
+				...navigationGroups,
+		  ]
+		: navigationGroups;
+
+	const displayName = session?.displayName || "Sokha Dara";
+	const roleLabel = session?.role
+		? session.role.charAt(0).toUpperCase() + session.role.slice(1)
+		: "Owner";
+	const initials = displayName
+		.split(" ")
+		.map((n) => n[0])
+		.join("")
+		.slice(0, 2)
+		.toUpperCase();
 
 	return (
 		<Sidebar collapsible="icon">
 			<SidebarHeader className="border-b p-3">
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton
-							size="lg"
-							render={<Link href="/admin" aria-label="QRMenu administration" />}
-							className="min-h-11"
-						>
-							<span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-								<UtensilsCrossed aria-hidden="true" />
+						<div className="flex items-center gap-2 px-1.5 py-1">
+							<span className="flex size-9 items-center justify-center rounded-lg bg-primary text-white shrink-0">
+								<UtensilsCrossed className="size-5" />
 							</span>
-							<span className="grid flex-1 text-left leading-tight">
-								<span className="font-semibold">QRMenu</span>
-								<span className="text-xs text-muted-foreground">Restaurant admin</span>
-							</span>
-						</SidebarMenuButton>
+							<div className="grid flex-1 text-left leading-tight">
+								<span className="font-bold text-stone-900 truncate text-sm">
+									{activeContext.restaurantName}
+								</span>
+								<span className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
+									<GitBranch className="size-3 text-stone-400" />
+									{activeContext.branchName}
+								</span>
+							</div>
+						</div>
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarHeader>
 
 			<SidebarContent>
-				{navigationGroups.map((group) => (
+				{currentGroups.map((group) => (
 					<SidebarGroup key={group.label}>
 						<SidebarGroupLabel>{group.label}</SidebarGroupLabel>
 						<SidebarGroupContent>
 							<SidebarMenu>
 								{group.items.map((item) => {
-									const isActive = item.href === "/admin" ? pathname === item.href : pathname.startsWith(item.href);
+									const isActive =
+										item.href === "/admin"
+											? pathname === item.href
+											: pathname.startsWith(item.href);
 									return (
 										<SidebarMenuItem key={item.href}>
 											<SidebarMenuButton
@@ -130,13 +180,19 @@ export function AppSidebar() {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<div className="flex items-center justify-between gap-1 w-full group-data-[collapsible=icon]:flex-col">
-							<SidebarMenuButton size="lg" className="min-h-11 flex-1 pointer-events-none" tooltip="Sokha Dara">
+							<SidebarMenuButton
+								size="lg"
+								className="min-h-11 flex-1 pointer-events-none"
+								tooltip={displayName}
+							>
 								<Avatar className="size-8 rounded-lg">
-									<AvatarFallback className="rounded-lg bg-primary/10 text-primary">SD</AvatarFallback>
+									<AvatarFallback className="rounded-lg bg-primary/10 text-primary">
+										{initials}
+									</AvatarFallback>
 								</Avatar>
 								<span className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
-									<span className="truncate font-medium">Sokha Dara</span>
-									<span className="truncate text-xs text-muted-foreground">Owner</span>
+									<span className="truncate font-medium">{displayName}</span>
+									<span className="truncate text-xs text-muted-foreground">{roleLabel}</span>
 								</span>
 							</SidebarMenuButton>
 							<button

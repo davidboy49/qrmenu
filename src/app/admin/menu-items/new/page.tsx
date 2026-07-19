@@ -48,6 +48,7 @@ export default function NewMenuItemPage() {
 				<Button
 					variant="outline"
 					size="icon"
+					nativeButton={false}
 					render={<Link href="/admin/menu-items" aria-label="Back to menu items" />}
 					className="size-10 shrink-0"
 				>
@@ -138,6 +139,7 @@ export default function NewMenuItemPage() {
 						<div className="flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
 							<Button
 								variant="outline"
+								nativeButton={false}
 								render={<Link href="/admin/menu-items" />}
 								className="min-h-11"
 								onClick={(e) => {

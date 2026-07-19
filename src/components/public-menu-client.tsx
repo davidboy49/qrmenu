@@ -11,10 +11,12 @@ import { Button } from "@/components/ui/button";
 interface PublicMenuClientProps {
 	menu: {
 		restaurant: string;
+		branchName: string;
 		items: PublicMenuItem[];
 	};
 	locale: "en" | "km-KH";
 	slug: string;
+	isAdmin?: boolean;
 }
 
 function Price({ khr, usd }: { khr: number | null; usd: number | null }) {
@@ -34,7 +36,7 @@ function Price({ khr, usd }: { khr: number | null; usd: number | null }) {
 	);
 }
 
-export default function PublicMenuClient({ menu, locale, slug }: PublicMenuClientProps) {
+export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }: PublicMenuClientProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedItem, setSelectedItem] = useState<PublicMenuItem | null>(null);
 	const [activeCategory, setActiveCategory] = useState<string>("");
@@ -163,12 +165,14 @@ export default function PublicMenuClient({ menu, locale, slug }: PublicMenuClien
 								<Globe className="size-3.5 text-stone-500" />
 								{locale === "en" ? "ខ្មែរ" : "English"}
 							</Link>
-							<Link
-								href="/admin/menu-items"
-								className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3.5 text-xs font-semibold text-primary shadow-xs transition-all hover:bg-primary/10 active:scale-95 shrink-0"
-							>
-								<span>Admin View</span>
-							</Link>
+							{isAdmin && (
+								<Link
+									href="/admin/menu-items"
+									className="inline-flex h-9 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3.5 text-xs font-semibold text-primary shadow-xs transition-all hover:bg-primary/10 active:scale-95 shrink-0"
+								>
+									<span>Admin View</span>
+								</Link>
+							)}
 						</div>
 					</div>
 				</div>
@@ -212,11 +216,15 @@ export default function PublicMenuClient({ menu, locale, slug }: PublicMenuClien
 						{locale === "en" ? "Welcome to our table" : "សូមស្វាគមន៍មកកាន់តុរបស់អ្នក"}
 					</p>
 					<p className="mt-1 text-lg font-bold">
-						{locale === "en" ? "Fresh Khmer flavours, served today." : "រសជាតិខ្មែរស្រស់ៗ សម្រាប់ថ្ងៃនេះ។"}
+						{menu.restaurant.toLowerCase().includes("huddle") ? (
+							locale === "en" ? "Great drinks, great times, served today." : "ភេសជ្ជៈដ៏ល្អ ពេលវេលាដ៏រីករាយ សម្រាប់ថ្ងៃនេះ។"
+						) : (
+							locale === "en" ? `Fresh ${menu.restaurant} flavours, served today.` : `រសជាតិស្រស់ៗពី ${menu.restaurant} សម្រាប់ថ្ងៃនេះ។`
+						)}
 					</p>
 					<div className="mt-3 flex items-center gap-1.5 text-xs font-semibold bg-white/10 w-fit px-2.5 py-1 rounded-full backdrop-blur-xs">
 						<MapPin className="size-3.5" />
-						{locale === "en" ? "Main dining room" : "បន្ទប់ទទួលទានអាហារធំ"}
+						{menu.branchName}
 					</div>
 				</div>
 

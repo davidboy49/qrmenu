@@ -124,6 +124,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 					<Button
 						variant="ghost"
 						size="icon"
+						nativeButton={false}
 						render={<Link href={`/admin/menu-items/${row.original.id}`} aria-label={`Edit ${row.original.nameEn}`} />}
 					>
 						<Pencil aria-hidden="true" />
