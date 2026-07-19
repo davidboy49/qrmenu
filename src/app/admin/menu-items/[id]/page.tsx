@@ -50,6 +50,7 @@ export default function EditMenuItemPage() {
 	}, [id]);
 
 	async function submit(form: FormData) {
+		if (!confirm("Are you sure you want to save these changes?")) return;
 		setPending(true);
 		setError("");
 		const raw = Object.fromEntries(form);
@@ -235,7 +236,16 @@ export default function EditMenuItemPage() {
 						)}
 
 						<div className="flex justify-end gap-3 border-t pt-5">
-							<Button variant="outline" render={<Link href="/admin/menu-items" />} className="h-11">
+							<Button
+								variant="outline"
+								render={<Link href="/admin/menu-items" />}
+								className="h-11"
+								onClick={(e) => {
+									if (!confirm("Are you sure you want to discard your changes?")) {
+										e.preventDefault();
+									}
+								}}
+							>
 								Cancel
 							</Button>
 							<Button disabled={pending} className="h-11">

@@ -39,6 +39,8 @@ export default function MediaPage() {
 		const file = files?.[0];
 		if (!file) return;
 
+		if (!confirm(`Are you sure you want to upload "${file.name}" to the media library?`)) return;
+
 		setPending(true);
 		setError("");
 

@@ -16,6 +16,7 @@ export default function NewMenuItemPage() {
 	const [pending, setPending] = useState(false);
 
 	async function submit(form: FormData) {
+		if (!confirm("Are you sure you want to create this menu item?")) return;
 		setPending(true);
 		setError("");
 		const raw = Object.fromEntries(form);
@@ -135,7 +136,16 @@ export default function NewMenuItemPage() {
 						)}
 
 						<div className="flex flex-col-reverse gap-2 border-t pt-5 sm:flex-row sm:justify-end">
-							<Button variant="outline" render={<Link href="/admin/menu-items" />} className="min-h-11">
+							<Button
+								variant="outline"
+								render={<Link href="/admin/menu-items" />}
+								className="min-h-11"
+								onClick={(e) => {
+									if (!confirm("Are you sure you want to discard this new item?")) {
+										e.preventDefault();
+									}
+								}}
+							>
 								Cancel
 							</Button>
 							<Button type="submit" disabled={pending} className="min-h-11">

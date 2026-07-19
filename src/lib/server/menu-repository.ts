@@ -38,5 +38,27 @@ export type MediaAsset={id:string;key:string;mimeType:string;byteSize:number;cre
 export async function listMedia():Promise<MediaAsset[]>{const {DB:db}=await getCloudflareEnv();const {results=[]}=await db.prepare("SELECT id,r2_key key,mime_type mimeType,byte_size byteSize,created_at createdAt FROM media_assets WHERE restaurant_id=? AND status='ready' ORDER BY created_at DESC").bind(restaurantId).all<MediaAsset>();return results.map(r=>({...r,byteSize:Number(r.byteSize),createdAt:Number(r.createdAt)}))}
 export async function saveMedia(file:File){const {DB:db,BUCKET}=await getCloudflareEnv();const allowed=['image/jpeg','image/png','image/webp'];if(!allowed.includes(file.type)||file.size>5*1024*1024)throw new Error('Use a JPG, PNG, or WebP image smaller than 5 MB.');const mediaId=crypto.randomUUID(),now=timestamp(),extension=file.type.split('/')[1];const key=`restaurants/${restaurantId}/media/${mediaId}.${extension}`;await BUCKET.put(key,await file.arrayBuffer(),{httpMetadata:{contentType:file.type},customMetadata:{restaurantId}});await db.prepare("INSERT INTO media_assets (id,restaurant_id,r2_key,mime_type,byte_size,status,created_at,updated_at) VALUES (?,?,?,?,?,'ready',?,?)").bind(mediaId,restaurantId,key,file.type,file.size,now,now).run();return{id:mediaId,key,mimeType:file.type,byteSize:file.size,createdAt:now}}
 
+export async function deleteMedia(mediaId: string): Promise<boolean> {
+	const { DB: db, BUCKET } = await getCloudflareEnv();
+	const asset = await db
+		.prepare("SELECT r2_key FROM media_assets WHERE id=? AND restaurant_id=?")
+		.bind(mediaId, restaurantId)
+		.first<{ r2_key: string }>();
+	if (!asset) return false;
+
+	try {
+		await BUCKET.delete(asset.r2_key);
+	} catch (e) {
+		console.error("Failed to delete R2 object", e);
+	}
+
+	await db.batch([
+		db.prepare("DELETE FROM menu_item_media WHERE media_asset_id=?").bind(mediaId),
+		db.prepare("DELETE FROM media_assets WHERE id=? AND restaurant_id=?").bind(mediaId, restaurantId),
+	]);
+	return true;
+}
+
+
 export async function listAvailability(){const {DB:db}=await getCloudflareEnv();const {results=[]}=await db.prepare(`SELECT mi.id,COALESCE(t.name,'Unnamed item') name,COALESCE(a.state,'available') state FROM menu_items mi LEFT JOIN menu_item_translations t ON t.menu_item_id=mi.id AND t.locale='en' LEFT JOIN item_availability a ON a.menu_item_id=mi.id AND a.branch_id='branch-main' WHERE mi.restaurant_id=? AND mi.status='active' ORDER BY mi.display_order`).bind(restaurantId).all<{id:string;name:string;state:'available'|'sold_out'}>();return results}
 export async function setAvailability(itemId:string,state:'available'|'sold_out'){const {DB:db}=await getCloudflareEnv();const exists=await db.prepare("SELECT id FROM menu_items WHERE id=? AND restaurant_id=?").bind(itemId,restaurantId).first();if(!exists)return null;await db.prepare("INSERT INTO item_availability (menu_item_id,branch_id,state,updated_at) VALUES (?,'branch-main',?,?) ON CONFLICT(menu_item_id,branch_id) DO UPDATE SET state=excluded.state,updated_at=excluded.updated_at").bind(itemId,state,timestamp()).run();return {id:itemId,state}}
