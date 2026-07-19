@@ -126,8 +126,8 @@ export default function UsersPage() {
 			restaurantIds = [context.restaurantId];
 		}
 
-		if (!displayName || !email) {
-			setError("Name and Email are required.");
+		if (!displayName) {
+			setError("Name is required.");
 			return;
 		}
 
@@ -298,9 +298,9 @@ export default function UsersPage() {
 
 							<div className="grid gap-2">
 								<label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-stone-500">
-									Email
+									Email / Username (Optional)
 								</label>
-								<Input id="email" name="email" type="email" required className="min-h-11" placeholder="e.g. john@example.com" />
+								<Input id="email" name="email" type="text" className="min-h-11" placeholder="e.g. john@example.com or johndoe" />
 							</div>
 
 							<div className="grid gap-2">

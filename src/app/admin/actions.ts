@@ -24,8 +24,9 @@ export async function getSession() {
 		const token = cookieStore.get("auth_token")?.value;
 		if (!token) return null;
 
-		if (token === "demo-token-qrmenu-admin-success") {
-			return { role: "admin", displayName: "Super Admin", email: "admin" };
+		if (token.startsWith("demo-token-qrmenu-admin-success")) {
+			const email = token.includes(":") ? token.split(":")[1] : "admin";
+			return { role: "admin", displayName: "Super Admin", email: email };
 		}
 
 		if (token.startsWith("staff-token-")) {

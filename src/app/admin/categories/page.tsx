@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, FolderPlus, Loader2 } from "lucide-react";
+import { Plus, FolderPlus, Loader2, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,13 @@ export default function CategoriesPage() {
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(true);
 
+	// Edit states
+	const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+	const [editNameEn, setEditNameEn] = useState("");
+	const [editNameKm, setEditNameKm] = useState("");
+	const [editStatus, setEditStatus] = useState<"active" | "inactive">("active");
+	const [editError, setEditError] = useState("");
+
 	async function load() {
 		try {
 			const r = await fetch("/api/admin/categories");
@@ -37,6 +44,15 @@ export default function CategoriesPage() {
 	useEffect(() => {
 		void load();
 	}, []);
+
+	useEffect(() => {
+		if (editingCategory) {
+			setEditNameEn(editingCategory.nameEn);
+			setEditNameKm(editingCategory.nameKm);
+			setEditStatus(editingCategory.status);
+			setEditError("");
+		}
+	}, [editingCategory]);
 
 	async function save(form: FormData) {
 		if (!confirm("Are you sure you want to create this category?")) return;
@@ -55,6 +71,31 @@ export default function CategoriesPage() {
 		}
 
 		setShow(false);
+		await load();
+	}
+
+	async function handleUpdate(e: React.FormEvent) {
+		e.preventDefault();
+		if (!confirm("Are you sure you want to update this category?")) return;
+		setEditError("");
+
+		const r = await fetch(`/api/admin/categories?id=${editingCategory?.id}`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				nameEn: editNameEn,
+				nameKm: editNameKm,
+				status: editStatus,
+			}),
+		});
+
+		if (!r.ok) {
+			const body = (await r.json()) as { error?: string };
+			setEditError(body.error || "Could not update category.");
+			return;
+		}
+
+		setEditingCategory(null);
 		await load();
 	}
 
@@ -146,6 +187,14 @@ export default function CategoriesPage() {
 										<Badge variant={category.status === "active" ? "default" : "secondary"}>
 											{category.status}
 										</Badge>
+										<Button 
+											variant="outline" 
+											size="sm" 
+											onClick={() => setEditingCategory(category)}
+											className="h-9 text-xs px-3 border-stone-200"
+										>
+											Edit
+										</Button>
 									</div>
 								</div>
 							))}
@@ -161,7 +210,97 @@ export default function CategoriesPage() {
 					)}
 				</CardContent>
 			</Card>
+
+			{/* Edit Category Modal Overlay */}
+			{editingCategory && (
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-xs p-4">
+					<div className="bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-md w-full overflow-hidden flex flex-col">
+						{/* Header */}
+						<div className="flex items-center justify-between border-b px-5 py-4 bg-stone-50">
+							<div>
+								<h3 className="font-bold text-stone-900 text-lg">Edit Category</h3>
+								<p className="text-xs text-stone-500 mt-0.5">Modify category name translations and state.</p>
+							</div>
+							<button 
+								onClick={() => setEditingCategory(null)}
+								className="text-stone-400 hover:text-stone-600 rounded-lg p-1.5 hover:bg-stone-200/50 transition-colors"
+							>
+								<X className="size-5" />
+							</button>
+						</div>
+
+						{/* Form Content */}
+						<form onSubmit={handleUpdate} className="flex flex-col flex-1 p-5 space-y-4">
+							<div className="grid gap-2">
+								<label htmlFor="editNameEn" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									English name
+								</label>
+								<Input 
+									required 
+									id="editNameEn" 
+									value={editNameEn} 
+									onChange={(e) => setEditNameEn(e.target.value)} 
+									className="min-h-11" 
+									placeholder="e.g. Desserts" 
+								/>
+							</div>
+							<div className="grid gap-2">
+								<label htmlFor="editNameKm" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									Khmer name
+								</label>
+								<Input 
+									required 
+									id="editNameKm" 
+									lang="km" 
+									value={editNameKm} 
+									onChange={(e) => setEditNameKm(e.target.value)} 
+									className="min-h-11" 
+									placeholder="ឧ. បង្អែម" 
+								/>
+							</div>
+							<div className="grid gap-2">
+								<label htmlFor="editStatusSelect" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									Status
+								</label>
+								<select
+									id="editStatusSelect"
+									value={editStatus}
+									onChange={(e) => setEditStatus(e.target.value as "active" | "inactive")}
+									className="min-h-11 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
+								>
+									<option value="active">Active</option>
+									<option value="inactive">Inactive</option>
+								</select>
+							</div>
+
+							{editError && (
+								<div className="flex items-center gap-2 text-sm font-semibold text-red-650 bg-red-50 border border-red-200 rounded-lg p-3">
+									<AlertCircle className="size-4 shrink-0" />
+									<span>{editError}</span>
+								</div>
+							)}
+
+							{/* Footer Actions */}
+							<div className="flex justify-end gap-3 border-t pt-4 bg-white">
+								<Button 
+									type="button" 
+									variant="outline" 
+									onClick={() => setEditingCategory(null)} 
+									className="h-11 border-stone-200"
+								>
+									Cancel
+								</Button>
+								<Button 
+									type="submit" 
+									className="h-11 px-6"
+								>
+									Save Changes
+								</Button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
 		</main>
 	);
 }
-

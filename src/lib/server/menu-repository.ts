@@ -327,6 +327,17 @@ export async function createCategory(input:{nameEn:string;nameKm:string}){
 	return {id:categoryId}
 }
 
+export async function updateCategory(id: string, input: { nameEn: string; nameKm: string; status: "active" | "inactive" }) {
+	const { DB: db } = await getCloudflareEnv();
+	const now = timestamp();
+	await db.batch([
+		db.prepare("UPDATE categories SET status=?, updated_at=? WHERE id=?").bind(input.status, now, id),
+		db.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name").bind(id, input.nameEn),
+		db.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'km-KH', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name").bind(id, input.nameKm),
+	]);
+	return { success: true };
+}
+
 export type Schedule={id:string;name:string;status:"active"|"inactive";priority:number;windows:string;itemCount:number};
 
 export async function listSchedules():Promise<Schedule[]>{
@@ -584,7 +595,7 @@ export async function listAllStaffUsers(limit?: number, offset?: number): Promis
 		       GROUP_CONCAT(r.name, ', ') as restaurant_names,
 		       GROUP_CONCAT(r.id, ', ') as restaurant_ids
 		FROM staff_users u
-		JOIN restaurants r ON r.id = u.restaurant_id
+		LEFT JOIN restaurants r ON r.id = u.restaurant_id
 		GROUP BY u.email
 		ORDER BY u.email
 	`;

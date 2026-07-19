@@ -11,7 +11,7 @@ import {
 } from "@/lib/server/menu-repository";
 
 const createSchema = z.object({
-	email: z.string().email().max(254),
+	email: z.string().max(254).optional().or(z.literal("")),
 	displayName: z.string().trim().min(2).max(100),
 	role: z.enum(["owner", "manager", "editor", "viewer"]),
 	restaurantId: z.string().optional(),
@@ -70,8 +70,14 @@ export async function POST(request: Request) {
 			restaurantId = await getRestaurantContextId();
 		}
 
+		let emailVal = data.data.email?.trim() || "";
+		if (!emailVal) {
+			const base = data.data.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+			emailVal = base || `user.${Math.floor(Math.random() * 10000)}`;
+		}
+
 		const result = await createStaffUserWithPassword({
-			email: data.data.email,
+			email: emailVal,
 			displayName: data.data.displayName,
 			role: data.data.role,
 			restaurantIds: [restaurantId],

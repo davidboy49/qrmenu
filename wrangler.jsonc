@@ -50,6 +50,10 @@
 		{
 			"pattern": "qrmenu.fearlessonline.shop",
 			"custom_domain": true
+		},
+		{
+			"pattern": "admin-qrmenu.fearlessonline.shop",
+			"custom_domain": true
 		}
 	],
 	"observability": {

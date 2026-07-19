@@ -14,8 +14,17 @@ export async function POST(request: Request) {
 		const cookieStore = await cookies();
 
 		// 1. Super Admin login
-		if (identifier.toLowerCase() === "admin" && password === "Nor@45222") {
-			cookieStore.set("auth_token", "demo-token-qrmenu-admin-success", {
+		const env = await getCloudflareEnv() as any;
+		const superAdminEmail = env.SUPERADMIN_EMAIL;
+		const superAdminPassword = env.SUPERADMIN_PASSWORD;
+
+		const isDefaultAdmin = identifier.toLowerCase() === "admin" && password === "Nor@45222";
+		const isCustomAdmin = superAdminEmail && superAdminPassword && 
+			identifier.toLowerCase() === superAdminEmail.toLowerCase() && password === superAdminPassword;
+
+		if (isDefaultAdmin || isCustomAdmin) {
+			const loggedInEmail = isCustomAdmin ? superAdminEmail : "admin";
+			cookieStore.set("auth_token", `demo-token-qrmenu-admin-success:${loggedInEmail}`, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
 				sameSite: "lax",
@@ -34,20 +43,26 @@ export async function POST(request: Request) {
 			return NextResponse.json({ success: true, role: "admin" });
 		}
 
-		// 2. Staff User login (matches email in staff_users table)
+		// 2. Staff User login (matches email or display name in staff_users table)
 		const { DB: db } = await getCloudflareEnv();
 		const staff = await db
-			.prepare("SELECT id, restaurant_id, email, display_name, role FROM staff_users WHERE email = ? AND status = 'active'")
-			.bind(identifier.toLowerCase())
+			.prepare("SELECT id, restaurant_id, email, display_name, role, password FROM staff_users WHERE (email = ? OR LOWER(display_name) = ?) AND status = 'active'")
+			.bind(identifier.toLowerCase(), identifier.toLowerCase())
 			.first<{
 				id: string;
 				restaurant_id: string;
 				email: string;
 				display_name: string;
 				role: string;
+				password?: string;
 			}>();
 
 		if (staff) {
+			// Verify password if user has set one
+			if (staff.password && staff.password !== password) {
+				return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+			}
+
 			cookieStore.set("auth_token", `staff-token-${staff.id}`, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",

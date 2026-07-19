@@ -97,11 +97,6 @@ export default function QRGeneratorClient({ activeContext }: QRGeneratorClientPr
 			{/* CSS Print Overrides */}
 			<style dangerouslySetInnerHTML={{ __html: `
 				@media print {
-					body {
-						background: white !important;
-						margin: 0 !important;
-						padding: 0 !important;
-					}
 					/* Hide all dashboard/backoffice wrapper layout UI */
 					div[data-sidebar="sidebar"],
 					header,
@@ -111,21 +106,34 @@ export default function QRGeneratorClient({ activeContext }: QRGeneratorClientPr
 					.sidebar-trigger {
 						display: none !important;
 					}
+					
+					/* Flatten parent layouts to prevent clipping */
+					html, body, [data-sidebar="wrapper"], main, div {
+						background: white !important;
+						color: black !important;
+						height: auto !important;
+						min-height: auto !important;
+						overflow: visible !important;
+						margin: 0 !important;
+						padding: 0 !important;
+						border: none !important;
+						box-shadow: none !important;
+						display: block !important;
+						width: 100% !important;
+					}
+					
 					/* Isolate and center target flyer container */
 					#print-area {
 						display: block !important;
-						position: absolute;
-						left: 50% !important;
-						top: 50% !important;
-						transform: translate(-50%, -50%) scale(1.15) !important;
+						margin: 2cm auto !important;
+						padding: 3rem !important;
 						width: 100% !important;
-						max-width: 420px !important;
-						box-shadow: none !important;
-						margin: 0 !important;
-						padding: 2.5rem !important;
-						border-radius: 1rem !important;
+						max-width: 440px !important;
+						border: 1px solid #e5e7eb !important;
+						border-radius: 1.5rem !important;
 						background-color: white !important;
-						page-break-inside: avoid;
+						box-shadow: none !important;
+						page-break-inside: avoid !important;
 					}
 				}
 			`}} />
