@@ -17,7 +17,30 @@ export async function listPublicMenu(slug:string, locale:"en"|"km-KH"): Promise<
  const alternate=locale==='en'?'km-KH':'en';const placeholders=active.map(()=>'?').join(',');const {results=[]}=await db.prepare(`SELECT mi.id,mi.category_id AS categoryId,COALESCE(ct.name,'Menu') AS category,COALESCE(t.name,alt.name) AS name,alt.name AS secondaryName,t.description,(SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND branch_id IS NULL) AS priceKhr,(SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND branch_id IS NULL) AS priceUsd,(SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId FROM menu_items mi JOIN schedule_items si ON si.menu_item_id=mi.id LEFT JOIN item_availability availability ON availability.menu_item_id=mi.id AND availability.branch_id='branch-main' LEFT JOIN menu_item_translations t ON t.menu_item_id=mi.id AND t.locale=? LEFT JOIN menu_item_translations alt ON alt.menu_item_id=mi.id AND alt.locale=? LEFT JOIN categories c ON c.id=mi.category_id LEFT JOIN category_translations ct ON ct.category_id=c.id AND ct.locale=? WHERE mi.restaurant_id=? AND mi.status='active' AND COALESCE(availability.state,'available')='available' AND si.schedule_id IN (${placeholders}) GROUP BY mi.id ORDER BY c.display_order,si.display_order,mi.display_order`).bind(locale,alternate,locale,restaurant.id,...active).all<PublicMenuItem>();return {restaurant:restaurant.name,items:results};
 }
 
-export async function createMenuItem(input:{nameEn:string;nameKm:string;priceKhr:number;priceUsd:number}) { const {DB:db}=await getCloudflareEnv();const itemId=crypto.randomUUID();const now=timestamp();await db.batch([db.prepare("INSERT INTO menu_items (id,restaurant_id,status,display_order,created_at,updated_at) VALUES (?,?,'inactive',999,?,?)").bind(itemId,restaurantId,now,now),db.prepare("INSERT INTO menu_item_translations (menu_item_id,locale,name) VALUES (?,'en',?),(?,'km-KH',?)").bind(itemId,input.nameEn,itemId,input.nameKm),db.prepare("INSERT INTO menu_item_prices (id,menu_item_id,currency,amount_minor,created_at,updated_at) VALUES (?,?,'KHR',?,?,?),(?,?,'USD',?,?,?)").bind(crypto.randomUUID(),itemId,input.priceKhr,now,now,crypto.randomUUID(),itemId,Math.round(input.priceUsd*100),now,now)]);return {id:itemId}; }
+export async function createMenuItem(input: {
+	nameEn: string;
+	nameKm: string;
+	priceKhr: number;
+	priceUsd: number;
+	imageId?: string | null;
+}) {
+	const { DB: db } = await getCloudflareEnv();
+	const itemId = crypto.randomUUID();
+	const now = timestamp();
+	const statements = [
+		db.prepare("INSERT INTO menu_items (id,restaurant_id,status,display_order,created_at,updated_at) VALUES (?,?,'inactive',999,?,?)").bind(itemId, restaurantId, now, now),
+		db.prepare("INSERT INTO menu_item_translations (menu_item_id,locale,name) VALUES (?,'en',?),(?,'km-KH',?)").bind(itemId, input.nameEn, itemId, input.nameKm),
+		db.prepare("INSERT INTO menu_item_prices (id,menu_item_id,currency,amount_minor,created_at,updated_at) VALUES (?,?,'KHR',?,?,?),(?,?,'USD',?,?,?)").bind(crypto.randomUUID(), itemId, input.priceKhr, now, now, crypto.randomUUID(), itemId, Math.round(input.priceUsd * 100), now, now),
+	];
+	if (input.imageId) {
+		statements.push(
+			db.prepare("INSERT INTO menu_item_media (menu_item_id,media_asset_id,is_primary,display_order) VALUES (?,?,1,0)").bind(itemId, input.imageId)
+		);
+	}
+	await db.batch(statements);
+	return { id: itemId };
+}
+
 
 export async function getMenuItem(itemId:string){return (await listAdminMenuItems()).find(item=>item.id===itemId)??null}
 export async function updateMenuItem(itemId:string,input:{nameEn:string;nameKm:string;priceKhr:number;priceUsd:number;status:"active"|"inactive";imageId?:string|null}){const {DB:db}=await getCloudflareEnv();const now=timestamp();const exists=await db.prepare("SELECT id FROM menu_items WHERE id=? AND restaurant_id=?").bind(itemId,restaurantId).first();if(!exists)return null;const statements=[db.prepare("UPDATE menu_items SET status=?,version=version+1,updated_at=? WHERE id=?").bind(input.status,now,itemId),db.prepare("UPDATE menu_item_translations SET name=? WHERE menu_item_id=? AND locale='en'").bind(input.nameEn,itemId),db.prepare("UPDATE menu_item_translations SET name=? WHERE menu_item_id=? AND locale='km-KH'").bind(input.nameKm,itemId),db.prepare("UPDATE menu_item_prices SET amount_minor=?,updated_at=? WHERE menu_item_id=? AND currency='KHR' AND branch_id IS NULL").bind(input.priceKhr,now,itemId),db.prepare("UPDATE menu_item_prices SET amount_minor=?,updated_at=? WHERE menu_item_id=? AND currency='USD' AND branch_id IS NULL").bind(Math.round(input.priceUsd*100),now,itemId)];if(input.imageId!==undefined){statements.push(db.prepare("DELETE FROM menu_item_media WHERE menu_item_id=? AND is_primary=1").bind(itemId));if(input.imageId)statements.push(db.prepare("INSERT INTO menu_item_media (menu_item_id,media_asset_id,is_primary,display_order) VALUES (?,?,1,0)").bind(itemId,input.imageId))}await db.batch(statements);return {id:itemId};}
