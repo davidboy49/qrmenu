@@ -346,11 +346,19 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
 							<div className="overflow-y-auto px-5 pb-6">
 								{selectedItem.imageId ? (
 									<div className="relative aspect-video w-full overflow-hidden rounded-xl bg-stone-100 shadow-inner">
+										{/* Blurred background of the same image */}
+										<Image
+											src={`/api/media/${selectedItem.imageId}`}
+											alt=""
+											fill
+											className="object-cover blur-md scale-105 opacity-40 select-none pointer-events-none"
+										/>
+										{/* Crisp, full uncropped image */}
 										<Image
 											src={`/api/media/${selectedItem.imageId}`}
 											alt={selectedItem.name}
 											fill
-											className="object-cover"
+											className="object-contain relative z-10"
 											priority
 										/>
 									</div>
