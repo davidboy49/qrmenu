@@ -68,7 +68,6 @@ const navigationGroups = [
 	{
 		label: "Access & security",
 		items: [
-			{ label: "Users", href: "/admin/users", icon: Users },
 			{ label: "Roles", href: "/admin/roles", icon: ShieldCheck },
 			{ label: "Audit log", href: "/admin/audit-log", icon: History },
 		],
@@ -105,7 +104,10 @@ export function AppSidebar({
 		? [
 				{
 					label: "Master Realm",
-					items: [{ label: "Restaurants & Branches", href: "/admin/restaurants", icon: Building2 }],
+					items: [
+						{ label: "Restaurants & Branches", href: "/admin/restaurants", icon: Building2 },
+						{ label: "User Management", href: "/admin/users", icon: Users },
+					],
 				},
 				...navigationGroups,
 		  ]

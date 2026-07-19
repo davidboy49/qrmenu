@@ -23,35 +23,31 @@ export async function GET(request: Request) {
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
+	if (session.role !== "admin") {
+		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+	}
 
 	const { searchParams } = new URL(request.url);
 	const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 	const limit = Math.max(1, parseInt(searchParams.get("limit") || "20", 10));
 	const offset = (page - 1) * limit;
 
-	if (session.role === "admin") {
-		const { users, totalCount } = await listAllStaffUsers(limit, offset);
-		return NextResponse.json({
-			users,
-			totalCount,
-			totalPages: Math.ceil(totalCount / limit),
-			currentPage: page,
-		});
-	} else {
-		const { users, totalCount } = await listStaffUsers(limit, offset);
-		return NextResponse.json({
-			users,
-			totalCount,
-			totalPages: Math.ceil(totalCount / limit),
-			currentPage: page,
-		});
-	}
+	const { users, totalCount } = await listAllStaffUsers(limit, offset);
+	return NextResponse.json({
+		users,
+		totalCount,
+		totalPages: Math.ceil(totalCount / limit),
+		currentPage: page,
+	});
 }
 
 export async function POST(request: Request) {
 	const session = await getSession();
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+	if (session.role !== "admin") {
+		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 	}
 
 	try {
@@ -95,6 +91,9 @@ export async function DELETE(request: Request) {
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 	}
+	if (session.role !== "admin") {
+		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+	}
 
 	const { searchParams } = new URL(request.url);
 	const id = searchParams.get("id");
@@ -114,6 +113,9 @@ export async function PUT(request: Request) {
 	const session = await getSession();
 	if (!session) {
 		return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+	}
+	if (session.role !== "admin") {
+		return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 	}
 
 	try {

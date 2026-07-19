@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import { 
 	Plus, 
 	UserPlus, 
@@ -246,6 +247,32 @@ export default function UsersPage() {
 		} else {
 			setEditRestaurants([...editRestaurants, id]);
 		}
+	}
+
+	if (loading) {
+		return (
+			<main className="flex min-h-screen items-center justify-center p-8 text-stone-400">
+				<div className="flex flex-col items-center justify-center">
+					<Loader2 className="size-8 animate-spin text-primary mb-2" />
+					<span>Loading dashboard...</span>
+				</div>
+			</main>
+		);
+	}
+
+	if (!session || session.role !== "admin") {
+		return (
+			<main className="flex min-h-screen items-center justify-center p-8 text-muted-foreground">
+				<div className="flex flex-col items-center gap-2 text-center max-w-md">
+					<Lock className="size-8 text-destructive animate-bounce" />
+					<h2 className="text-lg font-bold text-stone-900 mt-2">Access Denied</h2>
+					<p className="text-sm">Only the system-wide Global Admin has permission to view or manage users.</p>
+					<Button variant="outline" nativeButton={false} render={<Link href="/admin" />} className="mt-4 min-h-11">
+						Back to Dashboard
+					</Button>
+				</div>
+			</main>
+		);
 	}
 
 	return (
