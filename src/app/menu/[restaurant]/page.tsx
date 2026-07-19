@@ -1,8 +1,23 @@
-import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Globe, MapPin } from "lucide-react";
 import { listPublicMenu } from "@/lib/server/menu-repository";
-export const dynamic="force-dynamic";
-function Price({khr,usd}:{khr:number|null;usd:number|null}){return <div className="text-right"><p className="font-semibold tabular-nums">{khr?`${new Intl.NumberFormat('km-KH').format(khr)} ៛`:''}</p>{usd!==null&&<p className="text-sm text-muted-foreground">${(usd/100).toFixed(2)}</p>}</div>}
-export default async function PublicMenuPage({params,searchParams}:{params:Promise<{restaurant:string}>;searchParams:Promise<{lang?:string}>}){const {restaurant:slug}=await params;const {lang}=await searchParams;const locale=lang==='en'?'en':'km-KH';const menu=await listPublicMenu(slug,locale);if(!menu)notFound();const groups=Object.values(menu.items.reduce<Record<string,typeof menu.items>>((all,item)=>{(all[item.category]??=[]).push(item);return all},{}));return <main className="min-h-screen bg-stone-50"><header className="border-b bg-white"><div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4 sm:px-6"><div><p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">Digital menu</p><h1 className="mt-1 text-2xl font-bold tracking-tight">{menu.restaurant}</h1></div><Link href={`/menu/${slug}?lang=${locale==='en'?'km':'en'}`} className="inline-flex min-h-11 items-center gap-2 rounded-md border px-3 text-sm font-medium"><Globe className="size-4"/>{locale==='en'?'ខ្មែរ':'English'}</Link></div></header><div className="mx-auto max-w-3xl px-4 py-6 sm:px-6"><div className="mb-7 rounded-2xl bg-primary px-5 py-5 text-primary-foreground"><p className="text-sm font-medium opacity-90">{locale==='en'?'Welcome to our table':'សូមស្វាគមន៍មកកាន់តុរបស់អ្នក'}</p><p className="mt-1 text-xl font-semibold">{locale==='en'?'Fresh Khmer flavours, served today.':'រសជាតិខ្មែរស្រស់ៗ សម្រាប់ថ្ងៃនេះ។'}</p><div className="mt-3 flex items-center gap-2 text-sm opacity-90"><MapPin className="size-4"/>{locale==='en'?'Main dining room':'បន្ទប់ទទួលទានអាហារធំ'}</div></div>{groups.map(group=><section key={group[0].category} className="mb-8"><h2 className="mb-3 text-lg font-bold">{group[0].category}</h2><div className="divide-y rounded-xl border bg-white">{group.map(item=><article key={item.id} className="flex gap-4 p-4">{item.imageId?<Image src={`/api/media/${item.imageId}`} alt="" width={56} height={56} className="size-14 shrink-0 rounded-xl object-cover"/>:<div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-bold text-primary">{item.name.slice(0,2).toUpperCase()}</div>}<div className="min-w-0 flex-1"><h3 className="font-semibold">{item.name}</h3>{item.secondaryName&&<p lang={locale==='en'?'km':'en'} className="mt-0.5 text-sm text-muted-foreground">{item.secondaryName}</p>}{item.description&&<p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>}</div><Price khr={item.priceKhr} usd={item.priceUsd}/></article>)}</div></section>)}{!menu.items.length&&<p className="rounded-xl border bg-white p-6 text-center text-muted-foreground">{locale==='en'?'No menu is available right now.':'មិនមានមុខម្ហូបនៅពេលនេះទេ។'}</p>}</div></main>}
+import PublicMenuClient from "@/components/public-menu-client";
+
+export const dynamic = "force-dynamic";
+
+export default async function PublicMenuPage({
+	params,
+	searchParams,
+}: {
+	params: Promise<{ restaurant: string }>;
+	searchParams: Promise<{ lang?: string }>;
+}) {
+	const { restaurant: slug } = await params;
+	const { lang } = await searchParams;
+	const locale = lang === "en" ? "en" : "km-KH";
+
+	const menu = await listPublicMenu(slug, locale);
+	if (!menu) notFound();
+
+	return <PublicMenuClient menu={menu} locale={locale} slug={slug} />;
+}
+
