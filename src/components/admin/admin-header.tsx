@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Search, Globe, Building2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useTransition } from "react";
+import { useTransition, useState, useEffect } from "react";
 
 import {
 	Breadcrumb,
@@ -38,6 +38,17 @@ export function AdminHeader({
 }: AdminHeaderProps) {
 	const segments = usePathname().split("/").filter(Boolean);
 	const [isPending, startTransition] = useTransition();
+	const [customerMenuUrl, setCustomerMenuUrl] = useState(`/menu/${restaurantSlug}`);
+
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			let origin = window.location.origin;
+			if (window.location.hostname.startsWith("admin-qrmenu.")) {
+				origin = origin.replace("admin-qrmenu.", "qrmenu.");
+			}
+			setCustomerMenuUrl(`${origin}/menu/${restaurantSlug}`);
+		}
+	}, [restaurantSlug]);
 
 	const isSuperAdmin = session?.role === "admin";
 	const availableRestaurants = isSuperAdmin
@@ -95,7 +106,7 @@ export function AdminHeader({
 				<Button
 					variant="outline"
 					nativeButton={false}
-					render={<Link href={`/menu/${restaurantSlug}`} />}
+					render={<Link href={customerMenuUrl} />}
 					className="flex items-center gap-1.5 h-8 px-3 text-xs font-semibold shrink-0"
 				>
 					<Globe className="size-3.5 text-stone-500" />

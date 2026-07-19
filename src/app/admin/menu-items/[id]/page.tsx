@@ -14,6 +14,9 @@ type Item = {
 	id: string;
 	nameEn: string;
 	nameKm: string;
+	categoryId?: string | null;
+	descriptionEn?: string | null;
+	descriptionKm?: string | null;
 	priceKhr: number;
 	priceUsd: number;
 	status: "active" | "inactive";
@@ -30,6 +33,7 @@ export default function EditMenuItemPage() {
 	const router = useRouter();
 	const [item, setItem] = useState<Item>();
 	const [media, setMedia] = useState<Media[]>([]);
+	const [categories, setCategories] = useState<{ id: string; nameEn: string; nameKm: string }[]>([]);
 	const [imageId, setImageId] = useState<string | null>(null);
 	const [error, setError] = useState("");
 	const [pending, setPending] = useState(false);
@@ -37,14 +41,18 @@ export default function EditMenuItemPage() {
 	useEffect(() => {
 		Promise.all([
 			fetch(`/api/admin/menu-items/${id}`),
-			fetch("/api/admin/media")
+			fetch("/api/admin/media"),
+			fetch("/api/admin/categories")
 		])
-			.then(async ([itemResponse, mediaResponse]) => {
+			.then(async ([itemResponse, mediaResponse, categoriesResponse]) => {
 				if (!itemResponse.ok) throw new Error();
 				const itemData = (await itemResponse.json()) as Item;
 				setItem(itemData);
 				setImageId(itemData.imageId ?? null);
 				setMedia((await mediaResponse.json()) as Media[]);
+				if (categoriesResponse.ok) {
+					setCategories((await categoriesResponse.json()) as any[]);
+				}
 			})
 			.catch(() => setError("This menu item could not be found."));
 	}, [id]);
@@ -145,6 +153,57 @@ export default function EditMenuItemPage() {
 									className="min-h-11"
 								/>
 							</div>
+						</div>
+
+						<div className="grid gap-2">
+							<label htmlFor="categoryId" className="text-sm font-semibold text-stone-700">
+								Category
+							</label>
+							<select
+								id="categoryId"
+								name="categoryId"
+								defaultValue={item.categoryId || ""}
+								className="min-h-11 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								<option value="">Uncategorised</option>
+								{categories.map((cat) => (
+									<option key={cat.id} value={cat.id}>
+										{cat.nameEn} ({cat.nameKm})
+									</option>
+								))}
+							</select>
+						</div>
+
+						<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-2">
+								<label htmlFor="descriptionEn" className="text-sm font-semibold text-stone-700">
+									English description (Optional)
+								</label>
+								<textarea
+									id="descriptionEn"
+									name="descriptionEn"
+									defaultValue={item.descriptionEn || ""}
+									placeholder="Describe this dish in English..."
+									className="min-h-[100px] rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<label htmlFor="descriptionKm" className="text-sm font-semibold text-stone-700">
+									Khmer description (Optional)
+								</label>
+								<textarea
+									id="descriptionKm"
+									name="descriptionKm"
+									lang="km"
+									defaultValue={item.descriptionKm || ""}
+									placeholder="ពិពណ៌នាអំពីមុខម្ហូបនេះជាភាសាខ្មែរ..."
+									className="min-h-[100px] rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								/>
+							</div>
+						</div>
+
+						<div className="grid gap-4 sm:grid-cols-2">
 							<div className="grid gap-2">
 								<label className="text-sm font-semibold text-stone-700" htmlFor="priceKhr">
 									Price in KHR

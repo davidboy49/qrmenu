@@ -8,6 +8,9 @@ const schema = z.object({
 	priceKhr: z.coerce.number().int().min(0).max(10_000_000),
 	priceUsd: z.coerce.number().min(0).max(100_000),
 	imageId: z.string().uuid().nullable().optional(),
+	categoryId: z.string().uuid().nullable().optional(),
+	descriptionEn: z.string().optional().or(z.literal("")),
+	descriptionKm: z.string().optional().or(z.literal("")),
 });
 export async function GET(){return NextResponse.json(await listAdminMenuItems())}
 export async function POST(request:Request){const parsed=schema.safeParse(await request.json());if(!parsed.success)return NextResponse.json({error:"Please complete the required fields."},{status:400});return NextResponse.json(await createMenuItem(parsed.data),{status:201})}

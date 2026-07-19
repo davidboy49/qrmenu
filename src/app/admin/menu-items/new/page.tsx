@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,18 @@ export default function NewMenuItemPage() {
 	const [imageId, setImageId] = useState<string | null>(null);
 	const [error, setError] = useState("");
 	const [pending, setPending] = useState(false);
+	const [categories, setCategories] = useState<{ id: string; nameEn: string; nameKm: string }[]>([]);
+
+	useEffect(() => {
+		fetch("/api/admin/categories")
+			.then(async (res) => {
+				if (res.ok) {
+					const data = await res.json() as any[];
+					setCategories(data);
+				}
+			})
+			.catch(() => {});
+	}, []);
 
 	async function submit(form: FormData) {
 		if (!confirm("Are you sure you want to create this menu item?")) return;
@@ -69,31 +81,78 @@ export default function NewMenuItemPage() {
 				</CardHeader>
 				<CardContent>
 					<form action={submit} className="grid gap-6">
-						<div className="grid gap-2">
-							<label htmlFor="name-en" className="text-sm font-semibold text-stone-700">
-								English name
-							</label>
-							<Input
-								required
-								id="name-en"
-								name="nameEn"
-								placeholder="e.g. Fish Amok"
-								className="min-h-11"
-							/>
+						<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-2">
+								<label htmlFor="name-en" className="text-sm font-semibold text-stone-700">
+									English name
+								</label>
+								<Input
+									required
+									id="name-en"
+									name="nameEn"
+									placeholder="e.g. Fish Amok"
+									className="min-h-11"
+								/>
+							</div>
+							
+							<div className="grid gap-2">
+								<label htmlFor="name-km" className="text-sm font-semibold text-stone-700">
+									Khmer name
+								</label>
+								<Input
+									required
+									id="name-km"
+									name="nameKm"
+									lang="km"
+									placeholder="ឧ. អាម៉ុកត្រី"
+									className="min-h-11"
+								/>
+							</div>
 						</div>
-						
+
 						<div className="grid gap-2">
-							<label htmlFor="name-km" className="text-sm font-semibold text-stone-700">
-								Khmer name
+							<label htmlFor="category-id" className="text-sm font-semibold text-stone-700">
+								Category
 							</label>
-							<Input
-								required
-								id="name-km"
-								name="nameKm"
-								lang="km"
-								placeholder="ឧ. អាម៉ុកត្រី"
-								className="min-h-11"
-							/>
+							<select
+								id="category-id"
+								name="categoryId"
+								className="min-h-11 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							>
+								<option value="">Uncategorised</option>
+								{categories.map((cat) => (
+									<option key={cat.id} value={cat.id}>
+										{cat.nameEn} ({cat.nameKm})
+									</option>
+								))}
+							</select>
+						</div>
+
+						<div className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-2">
+								<label htmlFor="description-en" className="text-sm font-semibold text-stone-700">
+									English description (Optional)
+								</label>
+								<textarea
+									id="description-en"
+									name="descriptionEn"
+									placeholder="e.g. Traditional Khmer fish curry steamed in banana leaves"
+									className="min-h-[100px] rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<label htmlFor="description-km" className="text-sm font-semibold text-stone-700">
+									Khmer description (Optional)
+								</label>
+								<textarea
+									id="description-km"
+									name="descriptionKm"
+									lang="km"
+									placeholder="ឧ. អាហារប្រពៃណីខ្មែរ ចំហុយក្នុងស្លឹកចេក..."
+									className="min-h-[100px] rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								/>
+							</div>
 						</div>
 
 						<div className="grid gap-4 sm:grid-cols-2">

@@ -34,7 +34,11 @@ export default function QRGeneratorClient({ activeContext }: QRGeneratorClientPr
 
 	useEffect(() => {
 		if (typeof window !== "undefined") {
-			setOrigin(window.location.origin);
+			let currentOrigin = window.location.origin;
+			if (window.location.hostname.startsWith("admin-qrmenu.")) {
+				currentOrigin = currentOrigin.replace("admin-qrmenu.", "qrmenu.");
+			}
+			setOrigin(currentOrigin);
 		}
 	}, []);
 

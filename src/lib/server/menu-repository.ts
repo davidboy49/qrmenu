@@ -140,12 +140,15 @@ export async function listAdminMenuItems(): Promise<AdminMenuItem[]> {
 	const { DB: db } = await getCloudflareEnv();
 	const restaurantId = await getRestaurantContextId();
 	const branchId = await getBranchContextId();
-	const { results = [] } = await db.prepare(`SELECT mi.id, COALESCE(en.name,'') AS nameEn, COALESCE(km.name,'') AS nameKm, COALESCE(cat.name,'Uncategorised') AS category, mi.status, mi.updated_at AS updatedAt, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceKhr, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceUsd, (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId, GROUP_CONCAT(DISTINCT ms.name) AS schedules FROM menu_items mi LEFT JOIN menu_item_translations en ON en.menu_item_id=mi.id AND en.locale='en' LEFT JOIN menu_item_translations km ON km.menu_item_id=mi.id AND km.locale='km-KH' LEFT JOIN categories c ON c.id=mi.category_id LEFT JOIN category_translations cat ON cat.category_id=c.id AND cat.locale='en' LEFT JOIN schedule_items si ON si.menu_item_id=mi.id LEFT JOIN menu_schedules ms ON ms.id=si.schedule_id AND ms.status='active' WHERE mi.restaurant_id=? AND mi.status!='archived' GROUP BY mi.id ORDER BY mi.display_order,mi.updated_at DESC`).bind(branchId, branchId, restaurantId).all<Record<string, unknown>>();
+	const { results = [] } = await db.prepare(`SELECT mi.id, mi.category_id AS categoryId, en.name AS nameEn, km.name AS nameKm, en.description AS descriptionEn, km.description AS descriptionKm, COALESCE(cat.name,'Uncategorised') AS category, mi.status, mi.updated_at AS updatedAt, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceKhr, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceUsd, (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId, GROUP_CONCAT(DISTINCT ms.name) AS schedules FROM menu_items mi LEFT JOIN menu_item_translations en ON en.menu_item_id=mi.id AND en.locale='en' LEFT JOIN menu_item_translations km ON km.menu_item_id=mi.id AND km.locale='km-KH' LEFT JOIN categories c ON c.id=mi.category_id LEFT JOIN category_translations cat ON cat.category_id=c.id AND cat.locale='en' LEFT JOIN schedule_items si ON si.menu_item_id=mi.id LEFT JOIN menu_schedules ms ON ms.id=si.schedule_id AND ms.status='active' WHERE mi.restaurant_id=? AND mi.status!='archived' GROUP BY mi.id ORDER BY mi.display_order,mi.updated_at DESC`).bind(branchId, branchId, restaurantId).all<Record<string, unknown>>();
 	return results.map((r) => ({
 		id: String(r.id),
 		nameEn: String(r.nameEn),
 		nameKm: String(r.nameKm),
+		categoryId: r.categoryId ? String(r.categoryId) : null,
 		category: String(r.category),
+		descriptionEn: r.descriptionEn ? String(r.descriptionEn) : null,
+		descriptionKm: r.descriptionKm ? String(r.descriptionKm) : null,
 		priceKhr: Number(r.priceKhr),
 		priceUsd: Number(r.priceUsd) / 100,
 		schedules: r.schedules ? String(r.schedules).split(",") : [],
@@ -223,12 +226,17 @@ export async function listPublicMenu(
 		),
 	];
 
-	if (!active.length) {
-		return { restaurant: restaurant.name, branchName: branch.name, items: [] };
-	}
-
 	const alternate = locale === "en" ? "km-KH" : "en";
 	const placeholders = active.map(() => "?").join(",");
+	
+	const scheduleFilter = active.length > 0 
+		? `(si.schedule_id IN (${placeholders}) OR si.schedule_id IS NULL)`
+		: `si.schedule_id IS NULL`;
+
+	const binds = [branch.id, branch.id, branch.id, locale, alternate, locale, restaurant.id];
+	if (active.length > 0) {
+		binds.push(...active);
+	}
 
 	const { results = [] } = await db
 		.prepare(
@@ -237,17 +245,17 @@ export async function listPublicMenu(
 			        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceUsd,
 			        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId
 			 FROM menu_items mi
-			 JOIN schedule_items si ON si.menu_item_id=mi.id
+			 LEFT JOIN schedule_items si ON si.menu_item_id=mi.id
 			 LEFT JOIN item_availability availability ON availability.menu_item_id=mi.id AND availability.branch_id = ?
 			 LEFT JOIN menu_item_translations t ON t.menu_item_id=mi.id AND t.locale=?
 			 LEFT JOIN menu_item_translations alt ON alt.menu_item_id=mi.id AND alt.locale=?
 			 LEFT JOIN categories c ON c.id=mi.category_id
 			 LEFT JOIN category_translations ct ON ct.category_id=c.id AND ct.locale=?
-			 WHERE mi.restaurant_id=? AND mi.status='active' AND COALESCE(availability.state,'available')='available' AND si.schedule_id IN (${placeholders})
+			 WHERE mi.restaurant_id=? AND mi.status='active' AND COALESCE(availability.state,'available')='available' AND ${scheduleFilter}
 			 GROUP BY mi.id
 			 ORDER BY c.display_order, si.display_order, mi.display_order`
 		)
-		.bind(branch.id, branch.id, branch.id, locale, alternate, locale, restaurant.id, ...active)
+		.bind(...binds)
 		.all<PublicMenuItem>();
 
 	return {
@@ -263,14 +271,17 @@ export async function createMenuItem(input: {
 	priceKhr: number;
 	priceUsd: number;
 	imageId?: string | null;
+	categoryId?: string | null;
+	descriptionEn?: string | null;
+	descriptionKm?: string | null;
 }) {
 	const { DB: db } = await getCloudflareEnv();
 	const restaurantId = await getRestaurantContextId();
 	const itemId = crypto.randomUUID();
 	const now = timestamp();
 	const statements = [
-		db.prepare("INSERT INTO menu_items (id,restaurant_id,status,display_order,created_at,updated_at) VALUES (?,?,'inactive',999,?,?)").bind(itemId, restaurantId, now, now),
-		db.prepare("INSERT INTO menu_item_translations (menu_item_id,locale,name) VALUES (?,'en',?),(?,'km-KH',?)").bind(itemId, input.nameEn, itemId, input.nameKm),
+		db.prepare("INSERT INTO menu_items (id,restaurant_id,category_id,status,display_order,created_at,updated_at) VALUES (?,?,?,'inactive',999,?,?)").bind(itemId, restaurantId, input.categoryId || null, now, now),
+		db.prepare("INSERT INTO menu_item_translations (menu_item_id,locale,name,description) VALUES (?,'en',?,?),(?,'km-KH',?,?)").bind(itemId, input.nameEn, input.descriptionEn || null, itemId, input.nameKm, input.descriptionKm || null),
 		db.prepare("INSERT INTO menu_item_prices (id,menu_item_id,currency,amount_minor,created_at,updated_at) VALUES (?,?,'KHR',?,?,?),(?,?,'USD',?,?,?)").bind(crypto.randomUUID(), itemId, input.priceKhr, now, now, crypto.randomUUID(), itemId, Math.round(input.priceUsd * 100), now, now),
 	];
 	if (input.imageId) {
@@ -284,7 +295,7 @@ export async function createMenuItem(input: {
 
 export async function getMenuItem(itemId:string){return (await listAdminMenuItems()).find(item=>item.id===itemId)??null}
 
-export async function updateMenuItem(itemId:string,input:{nameEn:string;nameKm:string;priceKhr:number;priceUsd:number;status:"active"|"inactive";imageId?:string|null}){
+export async function updateMenuItem(itemId:string,input:{nameEn:string;nameKm:string;priceKhr:number;priceUsd:number;status:"active"|"inactive";imageId?:string|null;categoryId?:string|null;descriptionEn?:string|null;descriptionKm?:string|null}){
 	const {DB:db}=await getCloudflareEnv();
 	const restaurantId = await getRestaurantContextId();
 	const branchId = await getBranchContextId();
@@ -292,9 +303,9 @@ export async function updateMenuItem(itemId:string,input:{nameEn:string;nameKm:s
 	const exists=await db.prepare("SELECT id FROM menu_items WHERE id=? AND restaurant_id=?").bind(itemId,restaurantId).first();
 	if(!exists)return null;
 	const statements=[
-		db.prepare("UPDATE menu_items SET status=?,version=version+1,updated_at=? WHERE id=?").bind(input.status,now,itemId),
-		db.prepare("UPDATE menu_item_translations SET name=? WHERE menu_item_id=? AND locale='en'").bind(input.nameEn,itemId),
-		db.prepare("UPDATE menu_item_translations SET name=? WHERE menu_item_id=? AND locale='km-KH'").bind(input.nameKm,itemId),
+		db.prepare("UPDATE menu_items SET status=?,category_id=?,version=version+1,updated_at=? WHERE id=?").bind(input.status,input.categoryId||null,now,itemId),
+		db.prepare("UPDATE menu_item_translations SET name=?,description=? WHERE menu_item_id=? AND locale='en'").bind(input.nameEn,input.descriptionEn||null,itemId),
+		db.prepare("UPDATE menu_item_translations SET name=?,description=? WHERE menu_item_id=? AND locale='km-KH'").bind(input.nameKm,input.descriptionKm||null,itemId),
 		db.prepare("UPDATE menu_item_prices SET amount_minor=?,updated_at=? WHERE menu_item_id=? AND currency='KHR' AND (branch_id=? OR branch_id IS NULL)").bind(input.priceKhr,now,itemId,branchId),
 		db.prepare("UPDATE menu_item_prices SET amount_minor=?,updated_at=? WHERE menu_item_id=? AND currency='USD' AND (branch_id=? OR branch_id IS NULL)").bind(Math.round(input.priceUsd*100),now,itemId,branchId)
 	];
