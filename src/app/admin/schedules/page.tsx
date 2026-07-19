@@ -224,7 +224,7 @@ export default function SchedulesPage() {
 								<Button type="button" variant="outline" onClick={() => setShow(false)} className="h-11">
 									Cancel
 								</Button>
-								<Button className="h-11">Create schedule</Button>
+								<Button type="submit" className="h-11">Create schedule</Button>
 							</div>
 						</form>
 					</CardContent>

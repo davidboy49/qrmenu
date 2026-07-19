@@ -132,7 +132,7 @@ export default function UsersPage() {
 								<Button type="button" variant="outline" onClick={() => setShow(false)} className="h-11">
 									Cancel
 								</Button>
-								<Button className="h-11">Add user</Button>
+								<Button type="submit" className="h-11">Add user</Button>
 							</div>
 						</form>
 					</CardContent>
