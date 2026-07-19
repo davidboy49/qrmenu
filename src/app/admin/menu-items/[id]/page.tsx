@@ -248,7 +248,7 @@ export default function EditMenuItemPage() {
 							>
 								Cancel
 							</Button>
-							<Button disabled={pending} className="h-11">
+							<Button type="submit" disabled={pending} className="h-11">
 								{pending ? (
 									<>
 										<Loader2 className="size-4 animate-spin mr-1" />
