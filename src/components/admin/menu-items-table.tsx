@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import {
 	type ColumnDef,
@@ -30,6 +31,7 @@ export type MenuItemRow = {
 	status: "active" | "inactive" | "sold-out";
 	translationComplete: boolean;
 	updatedAt: string;
+	imageId?: string | null;
 };
 
 const globalMenuFilter: FilterFn<MenuItemRow> = (row, _columnId, value) => {
@@ -64,9 +66,21 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 				header: "Item",
 				cell: ({ row }) => (
 					<div className="flex min-w-56 items-center gap-3">
-						<div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
-							{row.original.nameEn.slice(0, 2).toUpperCase()}
-						</div>
+						{row.original.imageId ? (
+							<div className="relative size-11 shrink-0 overflow-hidden rounded-lg border bg-stone-50">
+								<Image
+									src={`/api/media/${row.original.imageId}`}
+									alt={row.original.nameEn}
+									fill
+									sizes="44px"
+									className="object-cover"
+								/>
+							</div>
+						) : (
+							<div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
+								{row.original.nameEn.slice(0, 2).toUpperCase()}
+							</div>
+						)}
 						<div className="min-w-0">
 							<p className="truncate font-medium">{row.original.nameEn}</p>
 							<p lang="km" className="truncate text-sm text-muted-foreground">{row.original.nameKm || "Missing Khmer name"}</p>
