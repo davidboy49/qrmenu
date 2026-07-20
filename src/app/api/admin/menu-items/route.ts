@@ -7,8 +7,8 @@ const schema = z.object({
 	nameKm: z.string().trim().min(2).max(120),
 	priceKhr: z.coerce.number().int().min(0).max(10_000_000),
 	priceUsd: z.coerce.number().min(0).max(100_000),
-	imageId: z.string().uuid().nullable().optional(),
-	categoryId: z.string().uuid().nullable().optional(),
+	imageId: z.string().trim().nullable().optional(),
+	categoryId: z.string().trim().nullable().optional(),
 	descriptionEn: z.string().optional().or(z.literal("")),
 	descriptionKm: z.string().optional().or(z.literal("")),
 });
