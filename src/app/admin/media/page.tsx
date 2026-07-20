@@ -5,6 +5,7 @@ import { ImagePlus, Loader2, Trash2, FileImage } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ImageCropperDialog from "@/components/admin/image-cropper-dialog";
 
 type Media = {
 	id: string;
@@ -17,6 +18,8 @@ type Media = {
 export default function MediaPage() {
 	const [assets, setAssets] = useState<Media[]>([]);
 	const [carouselIds, setCarouselIds] = useState<string[]>([]);
+	const [croppingFile, setCroppingFile] = useState<File | null>(null);
+	const [isCropOpen, setIsCropOpen] = useState(false);
 	const [error, setError] = useState("");
 	const [pending, setPending] = useState(false);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -63,17 +66,25 @@ export default function MediaPage() {
 		}
 	}
 
-	async function upload(files: FileList | null) {
+	// Triggered when file is selected from system dialogue
+	function handleFileSelect(files: FileList | null) {
 		const file = files?.[0];
 		if (!file) return;
+		setCroppingFile(file);
+		setIsCropOpen(true);
+	}
 
-		if (!confirm(`Are you sure you want to upload "${file.name}" to the media library?`)) return;
-
+	// Triggered when cropper confirms the cropped WebP Blob
+	async function handleUploadCropped(blob: Blob, filename: string) {
+		setIsCropOpen(false);
+		setCroppingFile(null);
 		setPending(true);
 		setError("");
 
 		const form = new FormData();
-		form.append("file", file);
+		// Convert Blob to a File object so Next.js/Cloudflare server receives it with a valid name
+		const fileToUpload = new File([blob], filename, { type: "image/webp" });
+		form.append("file", fileToUpload);
 
 		try {
 			const r = await fetch("/api/admin/media", {
@@ -99,19 +110,16 @@ export default function MediaPage() {
 		
 		setDeletingId(id);
 		try {
-			// Check if api supports delete. If not, just call endpoint or handle locally.
 			const r = await fetch(`/api/admin/media/${id}`, {
 				method: "DELETE",
 			});
 			if (r.ok) {
 				await load();
 			} else {
-				// Fallback if endpoint is not implemented, show warning but filter out locally for mockup
 				setAssets(prev => prev.filter(a => a.id !== id));
 			}
 		} catch (err) {
 			console.error(err);
-			// Fallback filter
 			setAssets(prev => prev.filter(a => a.id !== id));
 		} finally {
 			setDeletingId(null);
@@ -123,7 +131,7 @@ export default function MediaPage() {
 			<div>
 				<h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Media library</h1>
 				<p className="mt-1 text-sm text-muted-foreground">
-					Upload JPG, PNG, or WebP item photos to Cloudflare R2.
+					Upload and crop item photos or banners to Cloudflare R2.
 				</p>
 			</div>
 
@@ -131,7 +139,7 @@ export default function MediaPage() {
 				<CardHeader>
 					<CardTitle>Upload image</CardTitle>
 					<CardDescription>
-						Maximum 5 MB. Photos are stored privately in your restaurant media bucket.
+						Photos are automatically optimized and converted to WebP format.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
@@ -139,12 +147,12 @@ export default function MediaPage() {
 						{pending ? (
 							<div className="flex flex-col items-center gap-2 text-muted-foreground">
 								<Loader2 className="size-6 animate-spin text-primary" />
-								<span className="font-semibold text-sm">Uploading item photo...</span>
+								<span className="font-semibold text-sm">Uploading optimized photo...</span>
 							</div>
 						) : (
 							<>
 								<ImagePlus className="mb-2 size-6 text-primary" />
-								<span className="font-semibold text-sm">Choose an image</span>
+								<span className="font-semibold text-sm">Choose an image to crop</span>
 								<span className="mt-1 text-xs text-muted-foreground">
 									JPG, PNG, or WebP · max 5 MB
 								</span>
@@ -155,7 +163,7 @@ export default function MediaPage() {
 							type="file"
 							accept="image/jpeg,image/png,image/webp"
 							disabled={pending}
-							onChange={(e) => void upload(e.target.files)}
+							onChange={(e) => handleFileSelect(e.target.files)}
 						/>
 					</label>
 					{error && (
@@ -233,6 +241,16 @@ export default function MediaPage() {
 					</p>
 				</div>
 			)}
+
+			<ImageCropperDialog
+				file={croppingFile}
+				isOpen={isCropOpen}
+				onClose={() => {
+					setIsCropOpen(false);
+					setCroppingFile(null);
+				}}
+				onCropped={handleUploadCropped}
+			/>
 		</main>
 	);
 }
