@@ -15,13 +15,19 @@ export default function NewMenuItemPage() {
 	const [error, setError] = useState("");
 	const [pending, setPending] = useState(false);
 	const [categories, setCategories] = useState<{ id: string; nameEn: string; nameKm: string }[]>([]);
+	const [media, setMedia] = useState<{ id: string; key: string }[]>([]);
 
 	useEffect(() => {
-		fetch("/api/admin/categories")
-			.then(async (res) => {
-				if (res.ok) {
-					const data = await res.json() as any[];
-					setCategories(data);
+		Promise.all([
+			fetch("/api/admin/categories"),
+			fetch("/api/admin/media")
+		])
+			.then(async ([catRes, mediaRes]) => {
+				if (catRes.ok) {
+					setCategories((await catRes.json()) as any[]);
+				}
+				if (mediaRes.ok) {
+					setMedia((await mediaRes.json()) as any[]);
 				}
 			})
 			.catch(() => {});
@@ -184,9 +190,30 @@ export default function NewMenuItemPage() {
 							</div>
 						</div>
 
-						<div className="grid gap-2 border-t pt-5">
-							<label className="text-sm font-semibold text-stone-700">Primary photo</label>
-							<ImageUpload value={imageId} onChange={setImageId} name="imageId" />
+						<div className="grid gap-4 sm:grid-cols-2 border-t pt-5">
+							<div className="grid gap-2">
+								<label className="text-sm font-semibold text-stone-700">Primary photo</label>
+								<ImageUpload value={imageId} onChange={setImageId} name="imageId" />
+							</div>
+
+							<div className="grid gap-2">
+								<label className="text-sm font-semibold text-stone-700" htmlFor="imageIdSelect">
+									Or choose existing photo
+								</label>
+								<select
+									id="imageIdSelect"
+									value={imageId || ""}
+									onChange={(e) => setImageId(e.target.value || null)}
+									className="min-h-11 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								>
+									<option value="">No photo</option>
+									{media.map((asset) => (
+										<option key={asset.id} value={asset.id}>
+											{asset.key.split("/").at(-1)}
+										</option>
+									))}
+								</select>
+							</div>
 						</div>
 
 						{error && (
