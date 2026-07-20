@@ -16,6 +16,7 @@ type Media = {
 
 export default function MediaPage() {
 	const [assets, setAssets] = useState<Media[]>([]);
+	const [carouselIds, setCarouselIds] = useState<string[]>([]);
 	const [error, setError] = useState("");
 	const [pending, setPending] = useState(false);
 	const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -26,6 +27,10 @@ export default function MediaPage() {
 			if (r.ok) {
 				setAssets((await r.json()) as Media[]);
 			}
+			const cr = await fetch("/api/admin/carousel");
+			if (cr.ok) {
+				setCarouselIds((await cr.json()) as string[]);
+			}
 		} catch (err) {
 			console.error("Failed to load media assets", err);
 		}
@@ -34,6 +39,29 @@ export default function MediaPage() {
 	useEffect(() => {
 		void load();
 	}, []);
+
+	async function toggleCarousel(mediaId: string, active: boolean) {
+		setCarouselIds(prev =>
+			active ? [...prev, mediaId] : prev.filter(id => id !== mediaId)
+		);
+		try {
+			const r = await fetch("/api/admin/carousel", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ mediaId, active }),
+			});
+			if (!r.ok) {
+				setCarouselIds(prev =>
+					active ? prev.filter(id => id !== mediaId) : [...prev, mediaId]
+				);
+			}
+		} catch (err) {
+			console.error("Failed to update carousel", err);
+			setCarouselIds(prev =>
+				active ? prev.filter(id => id !== mediaId) : [...prev, mediaId]
+			);
+		}
+	}
 
 	async function upload(files: FileList | null) {
 		const file = files?.[0];
@@ -178,6 +206,17 @@ export default function MediaPage() {
 										<FileImage className="size-3" />
 										{asset.mimeType.split("/")[1].toUpperCase()}
 									</span>
+								</div>
+								<div className="mt-3 pt-3 border-t flex items-center justify-between">
+									<label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-stone-700 select-none">
+										<input
+											type="checkbox"
+											checked={carouselIds.includes(asset.id)}
+											onChange={(e) => void toggleCarousel(asset.id, e.target.checked)}
+											className="rounded border-stone-300 accent-primary cursor-pointer size-4"
+										/>
+										<span>Show in Carousel</span>
+									</label>
 								</div>
 							</div>
 						</CardContent>

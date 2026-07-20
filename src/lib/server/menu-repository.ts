@@ -173,7 +173,7 @@ export async function listPublicMenu(
 	slug: string,
 	locale: "en" | "km-KH",
 	branchSlug?: string
-): Promise<{ restaurant: string; branchName: string; items: PublicMenuItem[] } | null> {
+): Promise<{ restaurant: string; branchName: string; items: PublicMenuItem[]; carousel?: string[] } | null> {
 	const { DB: db } = await getCloudflareEnv(); 
 	const restaurant = await db.prepare("SELECT id, name FROM restaurants WHERE slug=? AND status='active'").bind(slug).first<{id:string;name:string}>(); 
 	if (!restaurant) return null;
@@ -258,10 +258,13 @@ export async function listPublicMenu(
 		.bind(...binds)
 		.all<PublicMenuItem>();
 
+	const { results: carousel = [] } = await db.prepare("SELECT media_asset_id FROM restaurant_carousel_media WHERE restaurant_id=? ORDER BY display_order ASC").bind(restaurant.id).all<{media_asset_id:string}>();
+
 	return {
 		restaurant: restaurant.name,
 		branchName: branch.name,
 		items: results,
+		carousel: carousel.map(c => c.media_asset_id),
 	};
 }
 
@@ -734,5 +737,26 @@ export async function copyBranchContext(sourceBranchId: string, targetBranchId: 
 	if (statements.length > 0) {
 		await db.batch(statements);
 	}
+}
+
+export async function listRestaurantCarousel(restaurantId: string): Promise<string[]> {
+	const { DB: db } = await getCloudflareEnv();
+	const { results = [] } = await db.prepare("SELECT media_asset_id FROM restaurant_carousel_media WHERE restaurant_id=? ORDER BY display_order ASC").bind(restaurantId).all<{media_asset_id:string}>();
+	return results.map(r => r.media_asset_id);
+}
+
+export async function toggleCarouselMedia(restaurantId: string, mediaId: string, active: boolean): Promise<boolean> {
+	const { DB: db } = await getCloudflareEnv();
+	if (active) {
+		const existing = await db.prepare("SELECT 1 FROM restaurant_carousel_media WHERE restaurant_id=? AND media_asset_id=?").bind(restaurantId, mediaId).first();
+		if (!existing) {
+			const maxOrder = await db.prepare("SELECT MAX(display_order) as m FROM restaurant_carousel_media WHERE restaurant_id=?").bind(restaurantId).first<{m:number | null}>();
+			const nextOrder = (maxOrder?.m ?? 0) + 10;
+			await db.prepare("INSERT INTO restaurant_carousel_media (restaurant_id, media_asset_id, display_order) VALUES (?, ?, ?)").bind(restaurantId, mediaId, nextOrder).run();
+		}
+	} else {
+		await db.prepare("DELETE FROM restaurant_carousel_media WHERE restaurant_id=? AND media_asset_id=?").bind(restaurantId, mediaId).run();
+	}
+	return true;
 }
 
