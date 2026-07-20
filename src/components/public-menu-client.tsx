@@ -300,32 +300,56 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       className="w-full h-full flex flex-col justify-center p-6 relative overflow-hidden"
                       style={{
                         background: isDark 
-                          ? "linear-gradient(135deg, #0F0E0C 0%, #1F1B16 50%, #14120F 100%)"
-                          : "linear-gradient(135deg, #FFFFFF 0%, #F9F8F6 100%)",
+                          ? "linear-gradient(135deg, #0d0c0a 0%, #15130f 50%, #0d0c0a 100%)"
+                          : "linear-gradient(135deg, #ffffff 0%, #f7f6f2 100%)",
                       }}
                     >
-                      <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "16px 16px" }} />
-                      <div className="absolute inset-2.5 rounded-xl pointer-events-none" style={{ border: `1px solid ${isDark ? "rgba(201,169,110,0.12)" : "rgba(201,169,110,0.2)"}` }} />
+                      {/* Subtle pattern background */}
+                      <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "18px 18px" }} />
                       
-                      <div className="relative z-10 flex items-center justify-between gap-4 h-full">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-bold uppercase tracking-[0.22em]" style={{ color: T.gold }}>
-                            {locale === "en" ? "WELCOME" : "សូមស្វាគមន៍"}
-                          </p>
-                          <h2 className="font-serif leading-tight mt-1 truncate" style={{ color: T.dark, fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.01em" }}>
-                            {menu.restaurant}
-                          </h2>
-                          <p className="text-[11px] mt-1 line-clamp-1" style={{ color: T.muted }}>
-                            {locale === "en" ? "Exquisite culinary creations" : "សិល្បៈនៃការចម្អិនអាហារដ៏ប្រណីត"}
-                          </p>
-                          <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold w-fit px-2.5 py-0.5 rounded-md border" style={{ background: T.softBg, color: T.dark, borderColor: T.border }}>
-                            <MapPin className="size-3" style={{ color: T.gold }} />
-                            {menu.branchName}
-                          </div>
+                      {/* Elegant thin inner border */}
+                      <div className="absolute inset-3.5 rounded-xl pointer-events-none" style={{ border: `1px solid ${isDark ? "rgba(201,169,110,0.15)" : "rgba(201,169,110,0.25)"}` }} />
+                      
+                      {/* Absolute corner accents for premium look */}
+                      <div className="absolute top-4 left-4 w-2 h-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
+                      <div className="absolute top-4 right-4 w-2 h-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
+                      <div className="absolute bottom-4 left-4 w-2 h-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
+                      <div className="absolute bottom-4 right-4 w-2 h-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
+
+                      <div className="relative z-10 flex flex-col items-center justify-center text-center h-full">
+                        {/* Elegant gold hexagon-inspired badge with initials */}
+                        <div 
+                          className="flex size-14 items-center justify-center mb-3 transition-transform duration-700 hover:scale-105"
+                          style={{ 
+                            background: isDark ? "rgba(201,169,110,0.05)" : "rgba(201,169,110,0.08)", 
+                            border: `2px solid ${T.gold}`,
+                            clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
+                            boxShadow: "0 0 15px rgba(201,169,110,0.2)"
+                          }}
+                        >
+                          <span className="font-serif text-lg font-bold tracking-widest" style={{ color: T.gold }}>
+                            {menu.restaurant.substring(0, 2).toUpperCase()}
+                          </span>
                         </div>
-                        <div className="flex size-14 shrink-0 items-center justify-center rounded-full" style={{ background: isDark ? "rgba(201,169,110,0.06)" : "rgba(201,169,110,0.1)", border: `1px solid ${T.gold}30` }}>
-                          <ChefHat className="size-7" style={{ color: T.gold }} />
-                        </div>
+
+                        {/* Welcome/Greeting subtitle */}
+                        <p className="text-[10px] font-bold tracking-[0.25em]" style={{ color: T.gold }}>
+                          {locale === "en" ? "WELCOME TO" : "ស្វាគមន៍មកកាន់"}
+                        </p>
+                        
+                        {/* Restaurant Name */}
+                        <h2 className="font-serif leading-tight mt-1 px-4 truncate max-w-full" style={{ color: T.dark, fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.015em" }}>
+                          {menu.restaurant}
+                        </h2>
+
+                        {/* Elegant Tagline / Sub-items */}
+                        <p className="text-[10px] mt-2 flex items-center justify-center gap-2 opacity-80" style={{ color: T.muted }}>
+                          <span>{locale === "en" ? "Quality" : "គុណភាពល្អ"}</span>
+                          <span className="text-[6px] opacity-40">•</span>
+                          <span>{locale === "en" ? "Fair Price" : "តម្លៃសមរម្យ"}</span>
+                          <span className="text-[6px] opacity-40">•</span>
+                          <span>{locale === "en" ? "Best Service" : "សេវាកម្មល្អ"}</span>
+                        </p>
                       </div>
                     </div>
                   ) : (
