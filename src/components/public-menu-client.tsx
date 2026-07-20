@@ -248,21 +248,24 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         >
           <div className="mx-auto max-w-2xl flex items-center justify-between gap-4 px-4 py-3 sm:px-6">
             <div className="min-w-0">
-              <p style={{ color: T.gold, fontSize: "9px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              <p style={{ color: T.gold, fontSize: "11px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase" }}>
                 {locale === "en" ? "Digital Menu" : "ម៉ឺនុយឌីជីថល"}
               </p>
-              <h1 className="font-serif truncate" style={{ color: T.dark, fontSize: "1.15rem", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.2 }}>
+              <h1 className="font-serif truncate mt-0.5" style={{ color: T.dark, fontSize: "1.45rem", fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.15 }}>
                 {menu.restaurant}
               </h1>
+              <p className="truncate opacity-75 font-sans" style={{ color: T.muted, fontSize: "10px", fontWeight: 500, marginTop: "1px" }}>
+                {menu.branchName}
+              </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href={`/menu/${slug}?lang=${locale === "en" ? "km" : "en"}`}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-all hover:opacity-85"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition-all hover:opacity-85 shadow-xs"
                 style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", color: T.dark, border: `1px solid ${T.border}` }}
               >
-                <Globe className="size-3.5 opacity-60" />
-                {locale === "en" ? "ខ្មែរ" : "English"}
+                <span className="text-sm leading-none">{locale === "en" ? "🇰🇭" : "🇺🇸"}</span>
+                <span>{locale === "en" ? "ខ្មែរ" : "English"}</span>
               </Link>
               
               {/* Theme toggle switch */}
