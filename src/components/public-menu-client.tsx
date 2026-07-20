@@ -575,34 +575,14 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
             )}
 
             {/* Developer/SaaS Sales Credit Footer */}
-            <div 
-              className="mt-12 mb-20 rounded-2xl p-5 text-center flex flex-col items-center justify-center border transition-all"
-              style={{ 
-                background: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.02)", 
-                borderColor: T.border 
-              }}
-            >
-              <div className="flex size-10 items-center justify-center mb-2.5 rounded-full" style={{ background: isDark ? "rgba(201,169,110,0.06)" : "rgba(201,169,110,0.1)", border: `1px solid ${T.gold}30` }}>
-                <Globe className="size-5" style={{ color: T.gold }} />
-              </div>
-              <h4 className="font-serif text-sm font-bold" style={{ color: T.dark }}>
-                {locale === "en" ? "Want a digital menu for your business?" : "ចង់បានម៉ឺនុយឌីជីថលសម្រាប់អាជីវកម្មរបស់អ្នក?"}
-              </h4>
-              <p className="text-[11px] mt-1" style={{ color: T.muted }}>
-                {locale === "en" ? "Create beautiful QR menus like this for your restaurant." : "បង្កើតម៉ឺនុយ QR ដ៏ស្រស់ស្អាតដូចនេះសម្រាប់ហាងរបស់អ្នក។"}
-              </p>
+            <div className="mt-12 mb-24 text-center">
               <a 
-                href="https://t.me/davidboy49" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="mt-3.5 inline-flex h-8 items-center justify-center rounded-full px-5 text-xs font-bold transition-all active:scale-95 hover:opacity-90" 
-                style={{ background: T.gold, color: isDark ? "#1C1814" : "#FFFFFF" }}
+                href="/" 
+                className="text-[11px] font-semibold tracking-wider transition-all hover:opacity-80 active:opacity-75 uppercase"
+                style={{ color: T.gold }}
               >
-                {locale === "en" ? "Contact Developer" : "ទាក់ទងអ្នកបង្កើត"}
-              </a>
-              <span className="text-[9px] mt-3 opacity-40 font-semibold uppercase tracking-wider" style={{ color: T.muted }}>
                 Powered by QRMenu
-              </span>
+              </a>
             </div>
           </div>
         </div>
