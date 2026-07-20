@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
@@ -47,6 +47,23 @@ const themes = {
   }
 };
 
+const scrollContainerToChild = (container: HTMLDivElement | null, childId: string) => {
+  if (!container) return;
+  const child = document.getElementById(childId);
+  if (!child) return;
+  
+  const containerRect = container.getBoundingClientRect();
+  const childRect = child.getBoundingClientRect();
+  
+  const childLeft = childRect.left - containerRect.left + container.scrollLeft;
+  const targetScrollLeft = childLeft - containerRect.width / 2 + childRect.width / 2;
+  
+  container.scrollTo({
+    left: targetScrollLeft,
+    behavior: "smooth"
+  });
+};
+
 export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }: PublicMenuClientProps) {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,6 +71,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
   const [activeCategory, setActiveCategory] = useState("");
   const [carouselIndex, setCarouselIndex] = useState(0);
   const tabsRef = useRef<HTMLDivElement>(null);
+  const circleTabsRef = useRef<HTMLDivElement>(null);
 
   // Initialize theme from localStorage
   useEffect(() => {
@@ -135,8 +153,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
       const y = el.getBoundingClientRect().top + window.scrollY - 80;
       window.scrollTo({ top: y, behavior: "smooth" });
     }
-    document.getElementById(`tab2-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-    document.getElementById(`tabCircle-${id}`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    scrollContainerToChild(tabsRef.current, `tab2-${id}`);
+    scrollContainerToChild(circleTabsRef.current, `tabCircle-${id}`);
   }, []);
 
   useEffect(() => {
@@ -150,8 +168,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
       }
       if (cur && cur !== activeCategory) {
         setActiveCategory(cur);
-        document.getElementById(`tab2-${cur}`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-        document.getElementById(`tabCircle-${cur}`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        scrollContainerToChild(tabsRef.current, `tab2-${cur}`);
+        scrollContainerToChild(circleTabsRef.current, `tabCircle-${cur}`);
       }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -282,27 +300,31 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       className="w-full h-full flex flex-col justify-center p-6 relative overflow-hidden"
                       style={{
                         background: isDark 
-                          ? "linear-gradient(135deg, #1C1814 0%, #2C3D20 50%, #1A2C1A 100%)"
-                          : "linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)",
+                          ? "linear-gradient(135deg, #0F0E0C 0%, #1F1B16 50%, #14120F 100%)"
+                          : "linear-gradient(135deg, #FFFFFF 0%, #F9F8F6 100%)",
                       }}
                     >
-                      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `radial-gradient(${T.gold}09 1px, transparent 1px)`, backgroundSize: "20px 20px" }} />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex size-16 items-center justify-center rounded-full" style={{ background: `${T.gold}20`, border: `1px solid ${T.gold}40` }}>
-                        <ChefHat className="size-8" style={{ color: T.gold }} />
-                      </div>
-                      <div className="relative z-10">
-                        <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: T.gold }}>
-                          {locale === "en" ? "Welcome to our table" : "សូមស្វាគមន៍មកកាន់តុរបស់អ្នក"}
-                        </p>
-                        <h2 className="font-serif leading-tight mt-1" style={{ color: T.dark, fontSize: "1.8rem", fontWeight: 700 }}>
-                          {menu.restaurant}
-                        </h2>
-                        <p className="text-xs mt-1" style={{ color: T.muted, fontWeight: 400 }}>
-                          {locale === "en" ? "Fresh flavours served daily" : "រសជាតិស្រស់ៗ បម្រើជូនរាល់ថ្ងៃ"}
-                        </p>
-                        <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold w-fit px-2.5 py-1 rounded-full border" style={{ background: T.card, color: T.dark, borderColor: T.border }}>
-                          <MapPin className="size-3" style={{ color: T.gold }} />
-                          {menu.branchName}
+                      <div className="absolute inset-0 pointer-events-none opacity-25" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "16px 16px" }} />
+                      <div className="absolute inset-2.5 rounded-xl pointer-events-none" style={{ border: `1px solid ${isDark ? "rgba(201,169,110,0.12)" : "rgba(201,169,110,0.2)"}` }} />
+                      
+                      <div className="relative z-10 flex items-center justify-between gap-4 h-full">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[9px] font-bold uppercase tracking-[0.22em]" style={{ color: T.gold }}>
+                            {locale === "en" ? "WELCOME" : "សូមស្វាគមន៍"}
+                          </p>
+                          <h2 className="font-serif leading-tight mt-1 truncate" style={{ color: T.dark, fontSize: "1.75rem", fontWeight: 700, letterSpacing: "-0.01em" }}>
+                            {menu.restaurant}
+                          </h2>
+                          <p className="text-[11px] mt-1 line-clamp-1" style={{ color: T.muted }}>
+                            {locale === "en" ? "Exquisite culinary creations" : "សិល្បៈនៃការចម្អិនអាហារដ៏ប្រណីត"}
+                          </p>
+                          <div className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold w-fit px-2.5 py-0.5 rounded-md border" style={{ background: T.softBg, color: T.dark, borderColor: T.border }}>
+                            <MapPin className="size-3" style={{ color: T.gold }} />
+                            {menu.branchName}
+                          </div>
+                        </div>
+                        <div className="flex size-14 shrink-0 items-center justify-center rounded-full" style={{ background: isDark ? "rgba(201,169,110,0.06)" : "rgba(201,169,110,0.1)", border: `1px solid ${T.gold}30` }}>
+                          <ChefHat className="size-7" style={{ color: T.gold }} />
                         </div>
                       </div>
                     </div>
@@ -371,7 +393,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
 
           {/* ── Circular Categories Scroll Row ── */}
           {!searchQuery && categories.length > 0 && (
-            <div className="mb-6 overflow-x-auto py-2 scrollbar-none" style={{ scrollbarWidth: "none" }}>
+            <div ref={circleTabsRef} className="mb-6 overflow-x-auto py-2 scrollbar-none" style={{ scrollbarWidth: "none" }}>
               <div className="flex gap-4 px-1 justify-start">
                 {categories.map((cat) => {
                   const active = activeCategory === cat.id;
