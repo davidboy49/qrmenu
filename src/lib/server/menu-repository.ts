@@ -258,13 +258,19 @@ export async function listPublicMenu(
 		.bind(...binds)
 		.all<PublicMenuItem>();
 
-	const { results: carousel = [] } = await db.prepare("SELECT media_asset_id FROM restaurant_carousel_media WHERE restaurant_id=? ORDER BY display_order ASC").bind(restaurant.id).all<{media_asset_id:string}>();
+	let carouselIds: string[] = [];
+	try {
+		const { results: carousel = [] } = await db.prepare("SELECT media_asset_id FROM restaurant_carousel_media WHERE restaurant_id=? ORDER BY display_order ASC").bind(restaurant.id).all<{media_asset_id:string}>();
+		carouselIds = carousel.map(c => c.media_asset_id);
+	} catch (e) {
+		console.error("Failed to query restaurant_carousel_media (table might not exist yet):", e);
+	}
 
 	return {
 		restaurant: restaurant.name,
 		branchName: branch.name,
 		items: results,
-		carousel: carousel.map(c => c.media_asset_id),
+		carousel: carouselIds,
 	};
 }
 
