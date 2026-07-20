@@ -261,10 +261,36 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
             <div className="flex items-center gap-2 shrink-0">
               <Link
                 href={`/menu/${slug}?lang=${locale === "en" ? "km" : "en"}`}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition-all hover:opacity-85 shadow-xs"
+                className="inline-flex h-8 items-center gap-2 rounded-full px-3 text-xs font-bold transition-all hover:opacity-85 shadow-xs"
                 style={{ background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.04)", color: T.dark, border: `1px solid ${T.border}` }}
               >
-                <span className="text-sm leading-none">{locale === "en" ? "🇰🇭" : "🇺🇸"}</span>
+                {locale === "en" ? (
+                  // Cambodia Flag (to toggle to Khmer)
+                  <svg className="size-4 rounded-xs shrink-0" viewBox="0 0 960 640" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="960" height="640" fill="#002F6C"/>
+                    <rect width="960" height="320" y="160" fill="#E01A22"/>
+                    <g fill="#FFF">
+                      {/* Temple Silhouette */}
+                      <path d="M480 200l-65 95h130zm-90 100l-30 45h60zm180 0l-30 45h60zm-200 60h240v20H370zm-15 25h270v15H355z"/>
+                      <path d="M410 295h140v10H410zm-45 45h230v10H365zm-25 45h280v15H340z"/>
+                    </g>
+                  </svg>
+                ) : (
+                  // United Kingdom / Union Jack Flag (to toggle to English)
+                  <svg className="size-4 rounded-xs shrink-0" viewBox="0 0 60 30" xmlns="http://www.w3.org/2000/svg">
+                    <clipPath id="s">
+                      <path d="M0,0 L60,0 L60,30 L0,30 Z"/>
+                    </clipPath>
+                    <g clipPath="url(#s)">
+                      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFF" strokeWidth="6"/>
+                      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#012169" strokeWidth="4"/>
+                      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="2" strokeDasharray="30 30" strokeDashoffset="30"/>
+                      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="2" strokeDasharray="0 30 30 0"/>
+                      <path d="M30,0 L30,30 M0,15 L60,15" stroke="#FFF" strokeWidth="10"/>
+                      <path d="M30,0 L30,30 M0,15 L60,15" stroke="#C8102E" strokeWidth="6"/>
+                    </g>
+                  </svg>
+                )}
                 <span>{locale === "en" ? "ខ្មែរ" : "English"}</span>
               </Link>
               
