@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
@@ -35,16 +35,21 @@ const T = {
 /* ─── Price chip ──────────────────────────────── */
 function PriceChip({ khr, usd }: { khr: number | null; usd: number | null }) {
   return (
-    <div>
-      {khr !== null && (
-        <p style={{ color: T.green, fontWeight: 700, fontSize: "0.85rem", lineHeight: 1.2 }}>
-          {new Intl.NumberFormat("km-KH").format(khr)} <span style={{ fontSize: "0.75rem" }}>៛</span>
-        </p>
-      )}
+    <div className="flex flex-col items-end gap-1">
       {usd !== null && (
-        <p style={{ color: T.muted, fontWeight: 500, fontSize: "0.72rem", marginTop: 2 }}>
+        <span className="font-bold tracking-tight" style={{ color: T.dark, fontSize: "1.05rem", lineHeight: 1.1 }}>
           ${(usd / 100).toFixed(2)}
-        </p>
+        </span>
+      )}
+      {khr !== null && usd !== null && (
+        <span className="text-[10px] font-semibold tracking-wide uppercase px-2 py-0.5 rounded-md" style={{ color: T.muted, background: T.softBg, border: `1px solid ${T.border}`, fontSize: "0.68rem" }}>
+          {new Intl.NumberFormat("km-KH").format(khr)} ៛
+        </span>
+      )}
+      {khr !== null && usd === null && (
+        <span className="font-bold" style={{ color: T.dark, fontSize: "1.05rem" }}>
+          {new Intl.NumberFormat("km-KH").format(khr)} ៛
+        </span>
       )}
     </div>
   );
@@ -53,16 +58,29 @@ function PriceChip({ khr, usd }: { khr: number | null; usd: number | null }) {
 /* ─── Price block for Detail View ──────────────── */
 function PriceBlock({ khr, usd }: { khr: number | null; usd: number | null }) {
   return (
-    <div className="flex items-baseline gap-3">
-      {khr !== null && (
-        <span className="font-serif text-2xl font-bold" style={{ color: T.green }}>
-          {new Intl.NumberFormat("km-KH").format(khr)} <span className="text-base">៛</span>
-        </span>
-      )}
+    <div className="flex items-center gap-4 py-1">
       {usd !== null && (
-        <span className="text-sm font-semibold" style={{ color: T.muted }}>
-          ${(usd / 100).toFixed(2)}
-        </span>
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5 text-amber-600">
+            USD Price
+          </span>
+          <span className="font-serif text-3xl font-bold" style={{ color: T.dark }}>
+            ${(usd / 100).toFixed(2)}
+          </span>
+        </div>
+      )}
+      {usd !== null && khr !== null && (
+        <div className="h-10 w-px self-center" style={{ background: T.border }} />
+      )}
+      {khr !== null && (
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5" style={{ color: T.muted }}>
+            KHR Estimate
+          </span>
+          <span className="text-xl font-bold" style={{ color: T.green }}>
+            {new Intl.NumberFormat("km-KH").format(khr)} <span className="text-sm">៛</span>
+          </span>
+        </div>
       )}
     </div>
   );
