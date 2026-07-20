@@ -18,12 +18,11 @@ export async function POST(request: Request) {
 		const superAdminEmail = env.SUPERADMIN_EMAIL;
 		const superAdminPassword = env.SUPERADMIN_PASSWORD;
 
-		const isDefaultAdmin = identifier.toLowerCase() === "admin" && password === "Nor@45222";
 		const isCustomAdmin = superAdminEmail && superAdminPassword && 
 			identifier.toLowerCase() === superAdminEmail.toLowerCase() && password === superAdminPassword;
 
-		if (isDefaultAdmin || isCustomAdmin) {
-			const loggedInEmail = isCustomAdmin ? superAdminEmail : "admin";
+		if (isCustomAdmin) {
+			const loggedInEmail = superAdminEmail;
 			cookieStore.set("auth_token", `demo-token-qrmenu-admin-success:${loggedInEmail}`, {
 				httpOnly: true,
 				secure: process.env.NODE_ENV === "production",
