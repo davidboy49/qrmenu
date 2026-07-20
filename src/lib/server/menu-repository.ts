@@ -322,7 +322,7 @@ export type Category={id:string;nameEn:string;nameKm:string;status:"active"|"ina
 export async function listCategories():Promise<Category[]>{
 	const {DB:db}=await getCloudflareEnv();
 	const restaurantId = await getRestaurantContextId();
-	const {results=[]}=await db.prepare("SELECT c.id,COALESCE(en.name,'') nameEn,COALESCE(km.name,'') nameKm,c.status,COUNT(mi.id) itemCount FROM categories c LEFT JOIN category_translations en ON en.category_id=c.id AND en.locale='en' LEFT JOIN category_translations km ON km.category_id=c.id AND km.locale='km-KH' LEFT JOIN menu_items mi ON mi.category_id=c.id AND mi.status!='archived' WHERE c.restaurant_id=? AND c.status!='archived' GROUP BY c.id ORDER BY c.display_order").bind(restaurantId).all<Category>();
+	const {results=[]}=await db.prepare("SELECT c.id,COALESCE(en.name,'') nameEn,COALESCE(km.name,'') nameKm,c.status,COUNT(mi.id) itemCount FROM categories c LEFT JOIN category_translations en ON en.category_id=c.id AND en.locale='en' LEFT JOIN category_translations km ON km.category_id=c.id AND km.locale='km-KH' LEFT JOIN menu_items mi ON mi.category_id=c.id AND mi.status!='archived' WHERE c.restaurant_id=? AND c.status!='archived' GROUP BY c.id ORDER BY c.display_order, c.created_at").bind(restaurantId).all<Category>();
 	return results.map(r=>({...r,status:r.status==='active'?'active':'inactive',itemCount:Number(r.itemCount)}))
 }
 
@@ -346,6 +346,16 @@ export async function updateCategory(id: string, input: { nameEn: string; nameKm
 		db.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name").bind(id, input.nameEn),
 		db.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'km-KH', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name").bind(id, input.nameKm),
 	]);
+	return { success: true };
+}
+
+export async function reorderCategories(ids: string[]) {
+	const { DB: db } = await getCloudflareEnv();
+	const now = timestamp();
+	const statements = ids.map((id, index) => 
+		db.prepare("UPDATE categories SET display_order=?, updated_at=? WHERE id=?").bind(index, now, id)
+	);
+	await db.batch(statements);
 	return { success: true };
 }
 

@@ -27,6 +27,23 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
 	const { searchParams } = new URL(request.url);
+	const action = searchParams.get("action");
+
+	if (action === "reorder") {
+		try {
+			const body = await request.json() as { ids?: string[] };
+			if (!body.ids || !Array.isArray(body.ids)) {
+				return NextResponse.json({ error: "Invalid category ids array." }, { status: 400 });
+			}
+			const { reorderCategories } = await import("@/lib/server/menu-repository");
+			await reorderCategories(body.ids);
+			return NextResponse.json({ success: true });
+		} catch (err) {
+			console.error("Reorder failed", err);
+			return NextResponse.json({ error: "Could not save custom ordering." }, { status: 500 });
+		}
+	}
+
 	const id = searchParams.get("id");
 	if (!id) {
 		return NextResponse.json({ error: "Missing category ID." }, { status: 400 });

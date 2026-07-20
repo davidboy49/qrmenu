@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Plus, FolderPlus, Loader2, X, AlertCircle } from "lucide-react";
+import { Plus, FolderPlus, Loader2, X, AlertCircle, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,34 @@ export default function CategoriesPage() {
 		await load();
 	}
 
+	async function handleMove(index: number, direction: "up" | "down") {
+		const targetIndex = direction === "up" ? index - 1 : index + 1;
+		if (targetIndex < 0 || targetIndex >= items.length) return;
+
+		// Optimistic update
+		const newItems = [...items];
+		const temp = newItems[index];
+		newItems[index] = newItems[targetIndex];
+		newItems[targetIndex] = temp;
+		setItems(newItems);
+
+		// Synchronize with API
+		try {
+			const r = await fetch("/api/admin/categories?action=reorder", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ ids: newItems.map((item) => item.id) }),
+			});
+			if (!r.ok) {
+				throw new Error("Failed to save reorder");
+			}
+		} catch (err) {
+			console.error(err);
+			// Revert on failure
+			await load();
+		}
+	}
+
 	return (
 		<main className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -172,32 +200,61 @@ export default function CategoriesPage() {
 						</div>
 					) : (
 						<div className="divide-y divide-stone-100">
-							{items.map((category) => (
-								<div key={category.id} className="flex items-center justify-between gap-4 p-4.5 hover:bg-stone-50/30 transition-colors">
-									<div>
-										<p className="font-semibold text-stone-900">{category.nameEn}</p>
-										<p lang="km" className="mt-1 text-sm text-muted-foreground font-medium">
-											{category.nameKm}
-										</p>
+							{items.map((category, index) => {
+								const isFirst = index === 0;
+								const isLast = index === items.length - 1;
+								return (
+									<div key={category.id} className="flex items-center justify-between gap-4 p-4.5 hover:bg-stone-50/30 transition-colors">
+										<div className="flex items-center gap-4">
+											{/* Move controls */}
+											<div className="flex flex-col gap-0.5">
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													disabled={isFirst}
+													onClick={() => handleMove(index, "up")}
+													className="text-stone-400 hover:text-stone-700 disabled:opacity-30 disabled:hover:text-stone-400"
+													aria-label="Move category up"
+												>
+													<ArrowUp className="size-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="icon-sm"
+													disabled={isLast}
+													onClick={() => handleMove(index, "down")}
+													className="text-stone-400 hover:text-stone-700 disabled:opacity-30 disabled:hover:text-stone-400"
+													aria-label="Move category down"
+												>
+													<ArrowDown className="size-4" />
+												</Button>
+											</div>
+											<div>
+												<p className="font-semibold text-stone-900">{category.nameEn}</p>
+												<p lang="km" className="mt-1 text-sm text-muted-foreground font-medium">
+													{category.nameKm}
+												</p>
+											</div>
+										</div>
+										<div className="flex items-center gap-4">
+											<span className="text-xs font-semibold text-stone-500">
+												{category.itemCount} items
+											</span>
+											<Badge variant={category.status === "active" ? "default" : "secondary"}>
+												{category.status}
+											</Badge>
+											<Button 
+												variant="outline" 
+												size="sm" 
+												onClick={() => setEditingCategory(category)}
+												className="h-9 text-xs px-3 border-stone-200"
+											>
+												Edit
+											</Button>
+										</div>
 									</div>
-									<div className="flex items-center gap-4">
-										<span className="text-xs font-semibold text-stone-500">
-											{category.itemCount} items
-										</span>
-										<Badge variant={category.status === "active" ? "default" : "secondary"}>
-											{category.status}
-										</Badge>
-										<Button 
-											variant="outline" 
-											size="sm" 
-											onClick={() => setEditingCategory(category)}
-											className="h-9 text-xs px-3 border-stone-200"
-										>
-											Edit
-										</Button>
-									</div>
-								</div>
-							))}
+								);
+							})}
 
 							{items.length === 0 && (
 								<div className="text-center p-12 text-muted-foreground">
