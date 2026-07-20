@@ -574,52 +574,57 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               </div>
             )}
 
-            {/* Developer/SaaS Sales Credit Footer */}
-            <div className="mt-12 mb-24 text-center">
-              <a 
-                href="/" 
-                className="text-[11px] font-semibold tracking-wider transition-all hover:opacity-80 active:opacity-75 uppercase"
-                style={{ color: T.gold }}
-              >
-                Powered by QRMenu
-              </a>
-            </div>
+            {/* Developer/SaaS Sales Credit Footer (Removed from bottom flow) */}
           </div>
         </div>
 
-        {/* ── Fixed Bottom Category Pill Bar ── */}
+        {/* ── Fixed Bottom Category Pill Bar & Credit Link ── */}
         {!searchQuery && categories.length > 0 && (
-          <nav
-            ref={tabsRef}
-            className="fixed bottom-0 inset-x-0 z-40 flex overflow-x-auto items-center gap-2 px-4 py-3 scrollbar-none"
+          <div 
+            className="fixed bottom-0 inset-x-0 z-40 border-t flex flex-col items-center gap-1.5 px-4 py-2 sm:px-6"
             style={{
               background: isDark ? "rgba(18,18,18,0.96)" : "rgba(250,247,242,0.96)",
               backdropFilter: "blur(20px)",
               WebkitBackdropFilter: "blur(20px)",
-              borderTop: `1px solid ${T.border}`,
-              scrollbarWidth: "none",
+              borderColor: T.border,
             }}
-            aria-label="Menu categories"
           >
-            {categories.map((cat) => {
-              const active = activeCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  id={`tab2-${cat.id}`}
-                  onClick={() => scrollToCategory(cat.id)}
-                  className="shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition-all duration-200"
-                  style={
-                    active
-                      ? { background: T.gold, color: isDark ? "#1C1814" : "#FFFFFF", transform: "scale(1.04)" }
-                      : { background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", color: T.dark }
-                  }
-                >
-                  {cat.name}
-                </button>
-              );
-            })}
-          </nav>
+            {/* Horizontal scroll container for categories */}
+            <nav
+              ref={tabsRef}
+              className="flex w-full overflow-x-auto items-center gap-2 scrollbar-none py-0.5"
+              style={{ scrollbarWidth: "none" }}
+              aria-label="Menu categories"
+            >
+              {categories.map((cat) => {
+                const active = activeCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    id={`tab2-${cat.id}`}
+                    onClick={() => scrollToCategory(cat.id)}
+                    className="shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-xs font-bold transition-all duration-200"
+                    style={
+                      active
+                        ? { background: T.gold, color: isDark ? "#1C1814" : "#FFFFFF", transform: "scale(1.04)" }
+                        : { background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)", color: T.dark }
+                    }
+                  >
+                    {cat.name}
+                  </button>
+                );
+              })}
+            </nav>
+            
+            {/* Low profile developer credit centered below category pills */}
+            <a 
+              href="/" 
+              className="text-[9px] font-bold tracking-widest transition-all hover:opacity-80 active:opacity-75 uppercase opacity-55 mt-0.5 pb-0.5"
+              style={{ color: T.gold }}
+            >
+              Powered by QRMenu
+            </a>
+          </div>
         )}
       </div>
 
