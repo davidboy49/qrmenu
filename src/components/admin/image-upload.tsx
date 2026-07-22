@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { ImagePlus, Loader2, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, Trash2, RefreshCcw } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import ImageCropperDialog from "@/components/admin/image-cropper-dialog";
 
 interface ImageUploadProps {
 	value?: string | null;
@@ -15,15 +16,16 @@ export function ImageUpload({ value, onChange, name = "imageId" }: ImageUploadPr
 	const [uploading, setUploading] = useState(false);
 	const [error, setError] = useState("");
 	const [isDragOver, setIsDragOver] = useState(false);
+	const [cropFile, setCropFile] = useState<File | null>(null);
 
-	async function handleUpload(file: File) {
-		if (!file) return;
-
+	async function handleUploadCropped(blob: Blob, filename: string) {
+		setCropFile(null);
 		setUploading(true);
 		setError("");
 
 		const form = new FormData();
-		form.append("file", file);
+		const fileToUpload = new File([blob], filename, { type: "image/webp" });
+		form.append("file", fileToUpload);
 
 		try {
 			const res = await fetch("/api/admin/media", {
@@ -48,8 +50,10 @@ export function ImageUpload({ value, onChange, name = "imageId" }: ImageUploadPr
 	function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
 		const files = event.target.files;
 		if (files && files.length > 0) {
-			void handleUpload(files[0]);
+			setCropFile(files[0]);
 		}
+		// Reset the input so the same file can be selected again
+		event.target.value = "";
 	}
 
 	function handleDragOver(e: React.DragEvent) {
@@ -69,7 +73,7 @@ export function ImageUpload({ value, onChange, name = "imageId" }: ImageUploadPr
 		if (files && files.length > 0) {
 			const file = files[0];
 			if (file.type.startsWith("image/")) {
-				void handleUpload(file);
+				setCropFile(file);
 			} else {
 				setError("Please drop a valid image file.");
 			}
@@ -92,7 +96,18 @@ export function ImageUpload({ value, onChange, name = "imageId" }: ImageUploadPr
 						fill
 						className="object-cover transition-transform duration-300 group-hover:scale-105"
 					/>
-					<div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center gap-2">
+					<div className="absolute inset-0 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100 flex items-center justify-center gap-3">
+						<label className="cursor-pointer shadow-md inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10 bg-primary text-primary-foreground hover:bg-primary/90">
+							<RefreshCcw className="size-4" />
+							<span className="sr-only">Change image</span>
+							<input
+								type="file"
+								accept="image/jpeg,image/png,image/webp"
+								className="sr-only"
+								disabled={uploading}
+								onChange={handleFileChange}
+							/>
+						</label>
 						<Button
 							type="button"
 							variant="destructive"
@@ -146,6 +161,13 @@ export function ImageUpload({ value, onChange, name = "imageId" }: ImageUploadPr
 			)}
 
 			{error && <p className="text-xs font-medium text-destructive">{error}</p>}
+
+			<ImageCropperDialog
+				file={cropFile}
+				isOpen={!!cropFile}
+				onClose={() => setCropFile(null)}
+				onCropped={handleUploadCropped}
+			/>
 		</div>
 	);
 }

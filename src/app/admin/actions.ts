@@ -16,6 +16,7 @@ import {
 	updateStaffUserStatus,
 	copyRestaurantStructure,
 	copyBranchContext,
+	updateRestaurant,
 } from "@/lib/server/menu-repository";
 
 export async function getSession() {
@@ -260,5 +261,47 @@ export async function updateBranchAction(branchId: string, input: {
 	const result = await updateBranch(branchId, input);
 	revalidatePath("/admin/branches");
 	revalidatePath("/admin/restaurants");
+	return result;
+}
+
+export async function getRestaurantDetails(restaurantId: string) {
+	const session = await getSession();
+	if (!session) {
+		throw new Error("Unauthorized");
+	}
+	const { DB: db } = await getCloudflareEnv();
+	const restaurant = await db
+		.prepare("SELECT id, name, slug, timezone, default_locale as defaultLocale, logo_asset_id as logoAssetId FROM restaurants WHERE id = ?")
+		.bind(restaurantId)
+		.first<{ id: string; name: string; slug: string; timezone: string; defaultLocale: string; logoAssetId: string | null }>();
+	
+	if (!restaurant) {
+		throw new Error("Restaurant not found");
+	}
+	return restaurant;
+}
+
+export async function updateRestaurantAction(restaurantId: string, input: {
+	name: string;
+	timezone: string;
+	defaultLocale: string;
+	logoAssetId?: string | null;
+}) {
+	const session = await getSession();
+	if (!session) {
+		throw new Error("Unauthorized");
+	}
+	
+	// Only allow super admin or authorized staff
+	if (session.role !== "admin") {
+		const isAuthorized = session.restaurants?.some((r: any) => r.restaurant_id === restaurantId);
+		if (!isAuthorized) {
+			throw new Error("Unauthorized");
+		}
+	}
+
+	const result = await updateRestaurant(restaurantId, input);
+	revalidatePath("/admin/settings");
+	revalidatePath("/admin");
 	return result;
 }

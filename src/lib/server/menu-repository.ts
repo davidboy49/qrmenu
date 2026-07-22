@@ -32,6 +32,7 @@ export interface Restaurant {
 	default_locale: string;
 	branch_count: number;
 	created_at: number;
+	logo_asset_id?: string | null;
 }
 
 export interface Branch {
@@ -47,7 +48,7 @@ export interface Branch {
 export async function listRestaurants(): Promise<Restaurant[]> {
 	const { DB: db } = await getCloudflareEnv();
 	const { results = [] } = await db.prepare(
-		`SELECT r.id, r.slug, r.name, r.status, r.timezone, r.default_locale, 
+		`SELECT r.id, r.slug, r.name, r.status, r.timezone, r.default_locale, r.logo_asset_id,
 		        (SELECT COUNT(*) FROM branches WHERE restaurant_id = r.id) as branch_count,
 		        r.created_at
 		 FROM restaurants r 
@@ -78,6 +79,20 @@ export async function createRestaurant(input: {
 		).bind(branchId, restaurantId, tz, now, now),
 	]);
 	return { id: restaurantId, defaultBranchId: branchId };
+}
+
+export async function updateRestaurant(restaurantId: string, input: {
+	name: string;
+	timezone: string;
+	defaultLocale: string;
+	logoAssetId?: string | null;
+}) {
+	const { DB: db } = await getCloudflareEnv();
+	const now = timestamp();
+	await db.prepare(
+		"UPDATE restaurants SET name = ?, timezone = ?, default_locale = ?, logo_asset_id = ?, updated_at = ? WHERE id = ?"
+	).bind(input.name, input.timezone, input.defaultLocale, input.logoAssetId || null, now, restaurantId).run();
+	return { success: true };
 }
 
 export async function listBranches(restaurantId: string): Promise<Branch[]> {
@@ -173,9 +188,9 @@ export async function listPublicMenu(
 	slug: string,
 	locale: "en" | "km-KH",
 	branchSlug?: string
-): Promise<{ restaurant: string; branchName: string; items: PublicMenuItem[]; carousel?: string[] } | null> {
+): Promise<{ restaurant: string; branchName: string; items: PublicMenuItem[]; carousel?: string[]; logoId?: string | null } | null> {
 	const { DB: db } = await getCloudflareEnv(); 
-	const restaurant = await db.prepare("SELECT id, name FROM restaurants WHERE slug=? AND status='active'").bind(slug).first<{id:string;name:string}>(); 
+	const restaurant = await db.prepare("SELECT id, name, logo_asset_id FROM restaurants WHERE slug=? AND status='active'").bind(slug).first<{id:string;name:string;logo_asset_id:string|null}>(); 
 	if (!restaurant) return null;
 
 	// Resolve branch
@@ -271,6 +286,7 @@ export async function listPublicMenu(
 		branchName: branch.name,
 		items: results,
 		carousel: carouselIds,
+		logoId: restaurant.logo_asset_id,
 	};
 }
 
