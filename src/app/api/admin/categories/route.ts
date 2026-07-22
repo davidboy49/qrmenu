@@ -5,11 +5,13 @@ import { createCategory, listCategories, updateCategory } from "@/lib/server/men
 const schema = z.object({
 	nameEn: z.string().trim().min(2).max(80),
 	nameKm: z.string().trim().min(2).max(80),
+	code: z.string().trim().max(10).optional(),
 });
 
 const updateSchema = z.object({
 	nameEn: z.string().trim().min(2).max(80),
 	nameKm: z.string().trim().min(2).max(80),
+	code: z.string().trim().max(10).optional(),
 	status: z.enum(["active", "inactive"]),
 });
 
@@ -31,7 +33,7 @@ export async function PUT(request: Request) {
 
 	if (action === "reorder") {
 		try {
-			const body = await request.json() as { ids?: string[] };
+			const body = (await request.json()) as { ids?: string[] };
 			if (!body.ids || !Array.isArray(body.ids)) {
 				return NextResponse.json({ error: "Invalid category ids array." }, { status: 400 });
 			}

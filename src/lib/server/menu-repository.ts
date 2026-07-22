@@ -155,13 +155,14 @@ export async function listAdminMenuItems(): Promise<AdminMenuItem[]> {
 	const { DB: db } = await getCloudflareEnv();
 	const restaurantId = await getRestaurantContextId();
 	const branchId = await getBranchContextId();
-	const { results = [] } = await db.prepare(`SELECT mi.id, mi.category_id AS categoryId, en.name AS nameEn, km.name AS nameKm, en.description AS descriptionEn, km.description AS descriptionKm, COALESCE(cat.name,'Uncategorised') AS category, mi.status, mi.updated_at AS updatedAt, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceKhr, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceUsd, (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId, GROUP_CONCAT(DISTINCT ms.name) AS schedules FROM menu_items mi LEFT JOIN menu_item_translations en ON en.menu_item_id=mi.id AND en.locale='en' LEFT JOIN menu_item_translations km ON km.menu_item_id=mi.id AND km.locale='km-KH' LEFT JOIN categories c ON c.id=mi.category_id LEFT JOIN category_translations cat ON cat.category_id=c.id AND cat.locale='en' LEFT JOIN schedule_items si ON si.menu_item_id=mi.id LEFT JOIN menu_schedules ms ON ms.id=si.schedule_id AND ms.status='active' WHERE mi.restaurant_id=? AND mi.status!='archived' GROUP BY mi.id ORDER BY mi.display_order,mi.updated_at DESC`).bind(branchId, branchId, restaurantId).all<Record<string, unknown>>();
+	const { results = [] } = await db.prepare(`SELECT mi.id, mi.category_id AS categoryId, c.code AS categoryCode, en.name AS nameEn, km.name AS nameKm, en.description AS descriptionEn, km.description AS descriptionKm, COALESCE(cat.name,'Uncategorised') AS category, mi.status, mi.updated_at AS updatedAt, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceKhr, COALESCE((SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id=? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1),0) AS priceUsd, (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId, GROUP_CONCAT(DISTINCT ms.name) AS schedules FROM menu_items mi LEFT JOIN menu_item_translations en ON en.menu_item_id=mi.id AND en.locale='en' LEFT JOIN menu_item_translations km ON km.menu_item_id=mi.id AND km.locale='km-KH' LEFT JOIN categories c ON c.id=mi.category_id LEFT JOIN category_translations cat ON cat.category_id=c.id AND cat.locale='en' LEFT JOIN schedule_items si ON si.menu_item_id=mi.id LEFT JOIN menu_schedules ms ON ms.id=si.schedule_id AND ms.status='active' WHERE mi.restaurant_id=? AND mi.status!='archived' GROUP BY mi.id ORDER BY mi.display_order,mi.updated_at DESC`).bind(branchId, branchId, restaurantId).all<Record<string, unknown>>();
 	return results.map((r) => ({
 		id: String(r.id),
 		nameEn: String(r.nameEn),
 		nameKm: String(r.nameKm),
 		categoryId: r.categoryId ? String(r.categoryId) : null,
 		category: String(r.category),
+		categoryCode: r.categoryCode ? String(r.categoryCode).toUpperCase() : generateCategoryCode(String(r.category)),
 		descriptionEn: r.descriptionEn ? String(r.descriptionEn) : null,
 		descriptionKm: r.descriptionKm ? String(r.descriptionKm) : null,
 		priceKhr: Number(r.priceKhr),
@@ -255,7 +256,7 @@ export async function listPublicMenu(
 
 	const { results = [] } = await db
 		.prepare(
-			`SELECT mi.id, mi.category_id AS categoryId, COALESCE(ct.name,'Menu') AS category, COALESCE(t.name,alt.name) AS name, alt.name AS secondaryName, t.description,
+			`SELECT mi.id, mi.category_id AS categoryId, c.code AS categoryCode, COALESCE(ct.name,'Menu') AS category, COALESCE(t.name,alt.name) AS name, alt.name AS secondaryName, t.description,
 			        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceKhr,
 			        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceUsd,
 			        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId
@@ -342,35 +343,118 @@ export async function updateMenuItem(itemId:string,input:{nameEn:string;nameKm:s
 	return {id:itemId};
 }
 
-export type Category={id:string;nameEn:string;nameKm:string;status:"active"|"inactive";itemCount:number};
-
-export async function listCategories():Promise<Category[]>{
-	const {DB:db}=await getCloudflareEnv();
-	const restaurantId = await getRestaurantContextId();
-	const {results=[]}=await db.prepare("SELECT c.id,COALESCE(en.name,'') nameEn,COALESCE(km.name,'') nameKm,c.status,COUNT(mi.id) itemCount FROM categories c LEFT JOIN category_translations en ON en.category_id=c.id AND en.locale='en' LEFT JOIN category_translations km ON km.category_id=c.id AND km.locale='km-KH' LEFT JOIN menu_items mi ON mi.category_id=c.id AND mi.status!='archived' WHERE c.restaurant_id=? AND c.status!='archived' GROUP BY c.id ORDER BY c.display_order, c.created_at").bind(restaurantId).all<Category>();
-	return results.map(r=>({...r,status:r.status==='active'?'active':'inactive',itemCount:Number(r.itemCount)}))
+export function generateCategoryCode(name: string): string {
+	const cleaned = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+	if (cleaned.length >= 3) return cleaned.slice(0, 3);
+	if (cleaned.length > 0) return (cleaned + "XXX").slice(0, 3);
+	return "CAT";
 }
 
-export async function createCategory(input:{nameEn:string;nameKm:string}){
-	const {DB:db}=await getCloudflareEnv();
+export type Category = {
+	id: string;
+	code: string;
+	nameEn: string;
+	nameKm: string;
+	status: "active" | "inactive";
+	itemCount: number;
+};
+
+export async function listCategories(): Promise<Category[]> {
+	const { DB: db } = await getCloudflareEnv();
 	const restaurantId = await getRestaurantContextId();
-	const categoryId=crypto.randomUUID();
-	const now=timestamp();
-	await db.batch([
-		db.prepare("INSERT INTO categories (id,restaurant_id,status,display_order,created_at,updated_at) VALUES (?,?,'active',999,?,?)").bind(categoryId,restaurantId,now,now),
-		db.prepare("INSERT INTO category_translations (category_id,locale,name) VALUES (?,'en',?),(?,'km-KH',?)").bind(categoryId,input.nameEn,categoryId,input.nameKm)
-	]);
-	return {id:categoryId}
+	let results: any[] = [];
+	try {
+		const res = await db
+			.prepare(
+				"SELECT c.id, c.code, COALESCE(en.name,'') nameEn, COALESCE(km.name,'') nameKm, c.status, COUNT(mi.id) itemCount FROM categories c LEFT JOIN category_translations en ON en.category_id=c.id AND en.locale='en' LEFT JOIN category_translations km ON km.category_id=c.id AND km.locale='km-KH' LEFT JOIN menu_items mi ON mi.category_id=c.id AND mi.status!='archived' WHERE c.restaurant_id=? AND c.status!='archived' GROUP BY c.id ORDER BY c.display_order, c.created_at"
+			)
+			.bind(restaurantId)
+			.all<any>();
+		results = res.results || [];
+	} catch {
+		const res = await db
+			.prepare(
+				"SELECT c.id, COALESCE(en.name,'') nameEn, COALESCE(km.name,'') nameKm, c.status, COUNT(mi.id) itemCount FROM categories c LEFT JOIN category_translations en ON en.category_id=c.id AND en.locale='en' LEFT JOIN category_translations km ON km.category_id=c.id AND km.locale='km-KH' LEFT JOIN menu_items mi ON mi.category_id=c.id AND mi.status!='archived' WHERE c.restaurant_id=? AND c.status!='archived' GROUP BY c.id ORDER BY c.display_order, c.created_at"
+			)
+			.bind(restaurantId)
+			.all<any>();
+		results = res.results || [];
+	}
+	return results.map((r) => ({
+		id: String(r.id),
+		code: r.code ? String(r.code).toUpperCase() : generateCategoryCode(String(r.nameEn)),
+		nameEn: String(r.nameEn),
+		nameKm: String(r.nameKm),
+		status: r.status === "active" ? "active" : "inactive",
+		itemCount: Number(r.itemCount),
+	}));
 }
 
-export async function updateCategory(id: string, input: { nameEn: string; nameKm: string; status: "active" | "inactive" }) {
+export async function createCategory(input: { nameEn: string; nameKm: string; code?: string }) {
+	const { DB: db } = await getCloudflareEnv();
+	const restaurantId = await getRestaurantContextId();
+	const categoryId = crypto.randomUUID();
+	const now = timestamp();
+	const code = (input.code?.trim() || generateCategoryCode(input.nameEn)).toUpperCase();
+
+	try {
+		await db.batch([
+			db
+				.prepare(
+					"INSERT INTO categories (id, restaurant_id, code, status, display_order, created_at, updated_at) VALUES (?, ?, ?, 'active', 999, ?, ?)"
+				)
+				.bind(categoryId, restaurantId, code, now, now),
+			db
+				.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?), (?, 'km-KH', ?)")
+				.bind(categoryId, input.nameEn, categoryId, input.nameKm),
+		]);
+	} catch {
+		await db.batch([
+			db
+				.prepare("INSERT INTO categories (id, restaurant_id, status, display_order, created_at, updated_at) VALUES (?, ?, 'active', 999, ?, ?)")
+				.bind(categoryId, restaurantId, now, now),
+			db
+				.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?), (?, 'km-KH', ?)")
+				.bind(categoryId, input.nameEn, categoryId, input.nameKm),
+		]);
+	}
+	return { id: categoryId, code };
+}
+
+export async function updateCategory(id: string, input: { nameEn: string; nameKm: string; code?: string; status: "active" | "inactive" }) {
 	const { DB: db } = await getCloudflareEnv();
 	const now = timestamp();
-	await db.batch([
-		db.prepare("UPDATE categories SET status=?, updated_at=? WHERE id=?").bind(input.status, now, id),
-		db.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name").bind(id, input.nameEn),
-		db.prepare("INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'km-KH', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name").bind(id, input.nameKm),
-	]);
+	const code = (input.code?.trim() || generateCategoryCode(input.nameEn)).toUpperCase();
+
+	try {
+		await db.batch([
+			db.prepare("UPDATE categories SET code=?, status=?, updated_at=? WHERE id=?").bind(code, input.status, now, id),
+			db
+				.prepare(
+					"INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name"
+				)
+				.bind(id, input.nameEn),
+			db
+				.prepare(
+					"INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'km-KH', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name"
+				)
+				.bind(id, input.nameKm),
+		]);
+	} catch {
+		await db.batch([
+			db.prepare("UPDATE categories SET status=?, updated_at=? WHERE id=?").bind(input.status, now, id),
+			db
+				.prepare(
+					"INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'en', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name"
+				)
+				.bind(id, input.nameEn),
+			db
+				.prepare(
+					"INSERT INTO category_translations (category_id, locale, name) VALUES (?, 'km-KH', ?) ON CONFLICT(category_id, locale) DO UPDATE SET name=excluded.name"
+				)
+				.bind(id, input.nameKm),
+		]);
+	}
 	return { success: true };
 }
 

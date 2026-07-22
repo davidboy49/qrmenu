@@ -27,6 +27,7 @@ export type MenuItemRow = {
 	nameEn: string;
 	nameKm: string;
 	category: string;
+	categoryCode?: string | null;
 	priceKhr: number;
 	priceUsd: number;
 	schedules: string[];
@@ -40,7 +41,7 @@ const globalMenuFilter: FilterFn<MenuItemRow> = (row, _columnId, value) => {
 	const query = String(value).trim().toLocaleLowerCase();
 	if (!query) return true;
 	const item = row.original;
-	return [item.id, item.nameEn, item.nameKm, item.category, ...item.schedules]
+	return [item.id, item.nameEn, item.nameKm, item.category, item.categoryCode ?? "", ...item.schedules]
 		.join(" ")
 		.toLocaleLowerCase()
 		.includes(query);
@@ -76,7 +77,7 @@ function SortHeader({ column, title }: { column: any; title: string }) {
 	);
 }
 
-function IdBadge({ id }: { id: string }) {
+function IdBadge({ code, id }: { code: string; id: string }) {
 	const [copied, setCopied] = useState(false);
 	const copy = (e: React.MouseEvent) => {
 		e.stopPropagation();
@@ -88,11 +89,11 @@ function IdBadge({ id }: { id: string }) {
 		<button
 			type="button"
 			onClick={copy}
-			title={`Click to copy full ID: ${id}`}
-			className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+			title={`Click to copy UUID: ${id}`}
+			className="inline-flex items-center gap-1.5 font-mono text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 px-2 py-0.5 rounded-md transition-colors cursor-pointer"
 		>
-			{copied ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5 opacity-60" />}
-			{id.slice(0, 8)}...
+			<span>{code}</span>
+			{copied ? <Check className="size-3 text-emerald-500" /> : <Copy className="size-3 opacity-40 hover:opacity-100" />}
 		</button>
 	);
 }
@@ -103,12 +104,29 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 	const [status, setStatus] = useState("all");
 	const statusLabel = status === "all" ? "All statuses" : status === "sold-out" ? "Sold out" : `${status[0].toUpperCase()}${status.slice(1)}`;
 
+	const categoryItemCodes = useMemo(() => {
+		const counters: Record<string, number> = {};
+		const codes: Record<string, string> = {};
+		for (const item of data) {
+			const rawCode = item.categoryCode || item.category.slice(0, 3);
+			const catCode = rawCode.toUpperCase().replace(/[^A-Z0-9]/g, "") || "CAT";
+			counters[catCode] = (counters[catCode] || 0) + 1;
+			codes[item.id] = `${catCode}-${counters[catCode]}`;
+		}
+		return codes;
+	}, [data]);
+
 	const columns = useMemo<ColumnDef<MenuItemRow>[]>(
 		() => [
 			{
-				accessorKey: "id",
+				id: "index",
 				header: ({ column }) => <SortHeader column={column} title="ID" />,
-				cell: ({ row }) => <IdBadge id={row.original.id} />,
+				cell: ({ row }) => (
+					<IdBadge
+						code={categoryItemCodes[row.original.id] || `ITEM-${row.index + 1}`}
+						id={row.original.id}
+					/>
+				),
 			},
 			{
 				id: "item",

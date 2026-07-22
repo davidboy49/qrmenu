@@ -137,6 +137,18 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
     return list;
   }, [menu.carousel]);
 
+  const itemCodesMap = useMemo(() => {
+    const counters: Record<string, number> = {};
+    const codes: Record<string, string> = {};
+    for (const item of menu.items) {
+      const rawCode = item.categoryCode || item.category.slice(0, 3);
+      const catCode = rawCode.toUpperCase().replace(/[^A-Z0-9]/g, "") || "CAT";
+      counters[catCode] = (counters[catCode] || 0) + 1;
+      codes[item.id] = `${catCode}-${counters[catCode]}`;
+    }
+    return codes;
+  }, [menu.items]);
+
   // Auto-scroll carousel every 4.5 seconds
   useEffect(() => {
     if (slides.length <= 1) return;
@@ -543,6 +555,11 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       {/* Card details body */}
                       <div className="flex flex-col gap-1.5 p-3 flex-1 justify-between">
                         <div>
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: T.softBg, color: T.gold }}>
+                              {itemCodesMap[item.id]}
+                            </span>
+                          </div>
                           <h3 className="font-semibold leading-snug line-clamp-2" style={{ color: T.dark, fontSize: "0.85rem" }}>
                             {item.name}
                           </h3>
@@ -656,9 +673,14 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                   </div>
                 )}
                 <div className="px-5 pt-5">
-                  <span className="inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase" style={{ background: `${T.gold}1A`, color: T.gold, letterSpacing: "0.15em" }}>
-                    {selectedItem.category}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase" style={{ background: `${T.gold}1A`, color: T.gold, letterSpacing: "0.15em" }}>
+                      {selectedItem.category}
+                    </span>
+                    <span className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold" style={{ background: T.softBg, color: T.gold }}>
+                      {itemCodesMap[selectedItem.id]}
+                    </span>
+                  </div>
                   <h2 className="mt-2 font-serif leading-tight" style={{ color: T.dark, fontSize: "1.55rem", fontWeight: 700, letterSpacing: "-0.02em" }}>
                     {selectedItem.name}
                   </h2>

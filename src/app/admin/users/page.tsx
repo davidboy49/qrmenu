@@ -417,22 +417,19 @@ export default function UsersPage() {
 						</div>
 					) : (
 						<div className="divide-y divide-stone-100">
-							{users.map((user) => (
+							{users.map((user, idx) => (
 								<div 
 									key={user.id} 
 									onClick={() => setSelectedUser(user)}
 									className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 hover:bg-stone-50/40 transition-colors cursor-pointer"
 								>
 									<div className="flex items-start gap-3">
-										<div className="mt-1 flex size-9 items-center justify-center rounded-lg bg-stone-100 text-stone-600 shrink-0">
-											<User className="size-5" />
+										<div className="mt-1 flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary font-mono text-xs font-bold shrink-0" title={`UUID: ${user.id}`}>
+											#{(page - 1) * 20 + idx + 1}
 										</div>
 										<div>
 											<div className="flex items-center gap-2 flex-wrap">
 												<span className="font-bold text-stone-900 text-base">{user.displayName}</span>
-												<span className="font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded" title={`User ID: ${user.id}`}>
-													ID: {user.id.slice(0, 8)}...
-												</span>
 												<Badge variant="outline" className="capitalize text-xs font-semibold">
 													{user.role}
 												</Badge>

@@ -1,2 +1,30 @@
-export type PublicMenuItem = { id: string; categoryId: string; category: string; name: string; secondaryName: string | null; description: string | null; priceKhr: number | null; priceUsd: number | null; imageId: string | null };
-export type AdminMenuItem = { id: string; nameEn: string; nameKm: string; categoryId?: string | null; category: string; descriptionEn?: string | null; descriptionKm?: string | null; priceKhr: number; priceUsd: number; schedules: string[]; status: "active" | "inactive" | "sold-out"; translationComplete: boolean; updatedAt: string; imageId?: string | null };
+export type PublicMenuItem = {
+	id: string;
+	categoryId: string;
+	category: string;
+	categoryCode?: string | null;
+	name: string;
+	secondaryName: string | null;
+	description: string | null;
+	priceKhr: number | null;
+	priceUsd: number | null;
+	imageId: string | null;
+};
+
+export type AdminMenuItem = {
+	id: string;
+	nameEn: string;
+	nameKm: string;
+	categoryId?: string | null;
+	category: string;
+	categoryCode?: string | null;
+	descriptionEn?: string | null;
+	descriptionKm?: string | null;
+	priceKhr: number;
+	priceUsd: number;
+	schedules: string[];
+	status: "active" | "inactive" | "sold-out";
+	translationComplete: boolean;
+	updatedAt: string;
+	imageId?: string | null;
+};

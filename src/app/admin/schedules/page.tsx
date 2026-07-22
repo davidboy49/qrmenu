@@ -240,14 +240,14 @@ export default function SchedulesPage() {
 						</div>
 					) : (
 						<div className="divide-y divide-stone-100">
-							{schedules.map((s) => (
+							{schedules.map((s, idx) => (
 								<div key={s.id} className="flex items-center justify-between gap-4 p-4.5 hover:bg-stone-50/30 transition-colors">
 									<div>
 										<div className="flex items-center gap-2">
-											<p className="font-semibold text-stone-900">{s.name}</p>
-											<span className="font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded" title={`Schedule ID: ${s.id}`}>
-												ID: {s.id.slice(0, 8)}...
+											<span className="font-mono text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md" title={`UUID: ${s.id}`}>
+												#{idx + 1}
 											</span>
+											<p className="font-semibold text-stone-900">{s.name}</p>
 										</div>
 										<p className="mt-1 text-xs text-muted-foreground font-medium">
 											{s.windows

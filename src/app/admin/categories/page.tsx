@@ -9,11 +9,19 @@ import { Badge } from "@/components/ui/badge";
 
 type Category = {
 	id: string;
+	code: string;
 	nameEn: string;
 	nameKm: string;
 	status: "active" | "inactive";
 	itemCount: number;
 };
+
+function deriveCode(name: string): string {
+	const cleaned = name.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+	if (cleaned.length >= 3) return cleaned.slice(0, 3);
+	if (cleaned.length > 0) return (cleaned + "XXX").slice(0, 3);
+	return "CAT";
+}
 
 export default function CategoriesPage() {
 	const [items, setItems] = useState<Category[]>([]);
@@ -21,10 +29,17 @@ export default function CategoriesPage() {
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(true);
 
+	// Create states
+	const [createNameEn, setCreateNameEn] = useState("");
+	const [createNameKm, setCreateNameKm] = useState("");
+	const [createCode, setCreateCode] = useState("");
+	const [userTouchedCode, setUserTouchedCode] = useState(false);
+
 	// Edit states
 	const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 	const [editNameEn, setEditNameEn] = useState("");
 	const [editNameKm, setEditNameKm] = useState("");
+	const [editCode, setEditCode] = useState("");
 	const [editStatus, setEditStatus] = useState<"active" | "inactive">("active");
 	const [editError, setEditError] = useState("");
 
@@ -49,19 +64,33 @@ export default function CategoriesPage() {
 		if (editingCategory) {
 			setEditNameEn(editingCategory.nameEn);
 			setEditNameKm(editingCategory.nameKm);
+			setEditCode(editingCategory.code || deriveCode(editingCategory.nameEn));
 			setEditStatus(editingCategory.status);
 			setEditError("");
 		}
 	}, [editingCategory]);
 
-	async function save(form: FormData) {
+	// Auto generate Category ID when typing English name if not manually modified
+	function handleNameEnChange(val: string) {
+		setCreateNameEn(val);
+		if (!userTouchedCode) {
+			setCreateCode(deriveCode(val));
+		}
+	}
+
+	async function handleCreateSubmit(e: React.FormEvent) {
+		e.preventDefault();
 		if (!confirm("Are you sure you want to create this category?")) return;
 		setError("");
-		
+
 		const r = await fetch("/api/admin/categories", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(Object.fromEntries(form)),
+			body: JSON.stringify({
+				nameEn: createNameEn,
+				nameKm: createNameKm,
+				code: createCode.toUpperCase().trim() || deriveCode(createNameEn),
+			}),
 		});
 
 		if (!r.ok) {
@@ -71,6 +100,10 @@ export default function CategoriesPage() {
 		}
 
 		setShow(false);
+		setCreateNameEn("");
+		setCreateNameKm("");
+		setCreateCode("");
+		setUserTouchedCode(false);
 		await load();
 	}
 
@@ -85,6 +118,7 @@ export default function CategoriesPage() {
 			body: JSON.stringify({
 				nameEn: editNameEn,
 				nameKm: editNameKm,
+				code: editCode.toUpperCase().trim() || deriveCode(editNameEn),
 				status: editStatus,
 			}),
 		});
@@ -148,21 +182,57 @@ export default function CategoriesPage() {
 				<Card className="max-w-2xl border shadow-xs">
 					<CardHeader>
 						<CardTitle>New category</CardTitle>
-						<CardDescription>A category can be used as soon as it is created.</CardDescription>
+						<CardDescription>Category ID is auto-generated (3 letters) and customizable.</CardDescription>
 					</CardHeader>
 					<CardContent>
-						<form action={save} className="grid gap-4 sm:grid-cols-2">
+						<form onSubmit={handleCreateSubmit} className="grid gap-4 sm:grid-cols-2">
+							<div className="grid gap-2 sm:col-span-2">
+								<label htmlFor="createCode" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									Category ID / Code (3 Digits / Letters)
+								</label>
+								<div className="flex items-center gap-2">
+									<Input
+										required
+										id="createCode"
+										value={createCode}
+										onChange={(e) => {
+											setCreateCode(e.target.value.toUpperCase());
+											setUserTouchedCode(true);
+										}}
+										maxLength={10}
+										className="min-h-11 font-mono uppercase font-bold text-base max-w-xs"
+										placeholder="e.g. DES"
+									/>
+									<span className="text-xs text-muted-foreground">Derived from category name, editable</span>
+								</div>
+							</div>
+
 							<div className="grid gap-2">
 								<label htmlFor="nameEn" className="text-sm font-semibold text-stone-700">
 									English name
 								</label>
-								<Input required id="nameEn" name="nameEn" className="min-h-11" placeholder="e.g. Desserts" />
+								<Input
+									required
+									id="nameEn"
+									value={createNameEn}
+									onChange={(e) => handleNameEnChange(e.target.value)}
+									className="min-h-11"
+									placeholder="e.g. Desserts"
+								/>
 							</div>
 							<div className="grid gap-2">
 								<label htmlFor="nameKm" className="text-sm font-semibold text-stone-700">
 									Khmer name
 								</label>
-								<Input required id="nameKm" name="nameKm" lang="km" className="min-h-11" placeholder="ឧ. បង្អែម" />
+								<Input
+									required
+									id="nameKm"
+									value={createNameKm}
+									onChange={(e) => setCreateNameKm(e.target.value)}
+									lang="km"
+									className="min-h-11"
+									placeholder="ឧ. បង្អែម"
+								/>
 							</div>
 
 							{error && (
@@ -237,10 +307,10 @@ export default function CategoriesPage() {
 											</div>
 											<div>
 												<div className="flex items-center gap-2">
-													<p className="font-semibold text-stone-900">{category.nameEn}</p>
-													<span className="font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded" title={`Category ID: ${category.id}`}>
-														ID: {category.id.slice(0, 8)}...
+													<span className="font-mono text-xs font-bold text-stone-800 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded-md" title={`UUID: ${category.id}`}>
+														ID: {category.code || deriveCode(category.nameEn)}
 													</span>
+													<p className="font-semibold text-stone-900">{category.nameEn}</p>
 												</div>
 												<p lang="km" className="mt-1 text-sm text-muted-foreground font-medium">
 													{category.nameKm}
@@ -287,7 +357,7 @@ export default function CategoriesPage() {
 						<div className="flex items-center justify-between border-b px-5 py-4 bg-stone-50">
 							<div>
 								<h3 className="font-bold text-stone-900 text-lg">Edit Category</h3>
-								<p className="text-xs text-stone-500 mt-0.5">Modify category name translations and state.</p>
+								<p className="text-xs text-stone-500 mt-0.5">Modify category name translations, ID code, and state.</p>
 							</div>
 							<button 
 								onClick={() => setEditingCategory(null)}
@@ -299,6 +369,20 @@ export default function CategoriesPage() {
 
 						{/* Form Content */}
 						<form onSubmit={handleUpdate} className="flex flex-col flex-1 p-5 space-y-4">
+							<div className="grid gap-2">
+								<label htmlFor="editCode" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									Category ID / Code (3 Digits / Letters)
+								</label>
+								<Input 
+									required 
+									id="editCode" 
+									value={editCode} 
+									onChange={(e) => setEditCode(e.target.value.toUpperCase())} 
+									maxLength={10}
+									className="min-h-11 font-mono uppercase font-bold text-base" 
+									placeholder="e.g. DES" 
+								/>
+							</div>
 							<div className="grid gap-2">
 								<label htmlFor="editNameEn" className="text-xs font-bold uppercase tracking-wider text-stone-500">
 									English name
