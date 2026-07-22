@@ -166,11 +166,11 @@ export default function ImageCropperDialog({ file, isOpen, onClose, onCropped }:
 
 	return (
 		<div 
-			className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/70 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto"
+			className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/75 backdrop-blur-xs p-4 sm:p-6 overflow-y-auto"
 			onClick={onClose}
 		>
 			<div 
-				className="relative bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
+				className="relative bg-white rounded-2xl border border-stone-200 shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150"
 				onClick={(e) => e.stopPropagation()}
 			>
 				{/* Modal Header */}
@@ -225,24 +225,26 @@ export default function ImageCropperDialog({ file, isOpen, onClose, onCropped }:
 				</div>
 
 				{/* Crop container */}
-				<div className="p-6 flex-1 min-h-0 flex flex-col items-center justify-center overflow-hidden">
-					<div className="w-full h-full max-h-[420px] min-h-[260px] bg-stone-950/90 rounded-xl border border-stone-800 p-4 flex items-center justify-center overflow-hidden">
+				<div className="p-6 flex-1 min-h-0 flex flex-col items-center justify-center overflow-auto">
+					<div className="w-full h-full min-h-[300px] bg-stone-950/90 rounded-xl border border-stone-800 p-6 flex items-center justify-center overflow-auto">
 						{imgSrc ? (
-							<ReactCrop
-								crop={crop}
-								onChange={(c) => setCrop(c)}
-								onComplete={(c) => setCompletedCrop(c)}
-								aspect={aspectPreset === "free" ? undefined : (aspectPreset === "1:1" ? 1 : 21 / 9)}
-								className="max-h-full max-w-full inline-flex items-center justify-center"
-							>
-								<img
-									ref={imgRef}
-									alt="Crop source"
-									src={imgSrc}
-									onLoad={onImageLoad}
-									className="max-h-[380px] max-w-full object-contain block select-none"
-								/>
-							</ReactCrop>
+							<div className="p-2 flex items-center justify-center max-h-full max-w-full">
+								<ReactCrop
+									crop={crop}
+									onChange={(c) => setCrop(c)}
+									onComplete={(c) => setCompletedCrop(c)}
+									aspect={aspectPreset === "free" ? undefined : (aspectPreset === "1:1" ? 1 : 21 / 9)}
+									className="max-h-full max-w-full inline-flex items-center justify-center"
+								>
+									<img
+										ref={imgRef}
+										alt="Crop source"
+										src={imgSrc}
+										onLoad={onImageLoad}
+										className="max-h-[50vh] max-w-full object-contain block select-none rounded-xs"
+									/>
+								</ReactCrop>
+							</div>
 						) : (
 							<div className="text-stone-400 text-xs flex items-center gap-2">
 								<ImageIcon className="size-4" />
