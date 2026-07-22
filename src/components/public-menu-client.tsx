@@ -640,9 +640,15 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               <div className="mx-auto mt-3 mb-1 h-1 w-10 rounded-full" style={{ background: "#C9A96E55" }} />
               <div className="overflow-y-auto pb-8">
                 {selectedItem.imageId ? (
-                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3", background: "#1C1814" }}>
-                    <Image src={`/api/media/${selectedItem.imageId}`} alt="" fill className="object-cover blur-xl scale-110 opacity-30 select-none pointer-events-none" />
-                    <Image src={`/api/media/${selectedItem.imageId}`} alt={selectedItem.name} fill className="object-contain relative z-10" priority />
+                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: "4/3", background: isDark ? "#1C1814" : "#F3F4F6" }}>
+                    <Image
+                      src={`/api/media/${selectedItem.imageId}`}
+                      alt={selectedItem.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 500px"
+                      className="object-cover"
+                      priority
+                    />
                   </div>
                 ) : (
                   <div className="w-full flex items-center justify-center font-serif font-bold" style={{ aspectRatio: "4/3", fontSize: "4rem", background: "linear-gradient(135deg, #1C1814, #2C3D20)", color: T.gold }}>
