@@ -6,13 +6,15 @@ import { useMemo, useState } from "react";
 import {
 	type ColumnDef,
 	type FilterFn,
+	type SortingState,
 	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
 	getPaginationRowModel,
+	getSortedRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
-import { ChevronLeft, ChevronRight, Pencil, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Pencil, Search, SlidersHorizontal, Copy, Check } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,7 +40,7 @@ const globalMenuFilter: FilterFn<MenuItemRow> = (row, _columnId, value) => {
 	const query = String(value).trim().toLocaleLowerCase();
 	if (!query) return true;
 	const item = row.original;
-	return [item.nameEn, item.nameKm, item.category, ...item.schedules]
+	return [item.id, item.nameEn, item.nameKm, item.category, ...item.schedules]
 		.join(" ")
 		.toLocaleLowerCase()
 		.includes(query);
@@ -54,16 +56,64 @@ function StatusBadge({ status }: { status: MenuItemRow["status"] }) {
 	return <Badge variant="secondary">Inactive</Badge>;
 }
 
+function SortHeader({ column, title }: { column: any; title: string }) {
+	const isSorted = column.getIsSorted();
+	return (
+		<button
+			type="button"
+			onClick={() => column.toggleSorting(isSorted === "asc")}
+			className="inline-flex items-center gap-1 font-medium hover:text-foreground transition-colors cursor-pointer select-none"
+		>
+			{title}
+			{isSorted === "asc" ? (
+				<ArrowUp className="size-3.5 text-primary" />
+			) : isSorted === "desc" ? (
+				<ArrowDown className="size-3.5 text-primary" />
+			) : (
+				<ArrowUpDown className="size-3.5 opacity-40 hover:opacity-100" />
+			)}
+		</button>
+	);
+}
+
+function IdBadge({ id }: { id: string }) {
+	const [copied, setCopied] = useState(false);
+	const copy = (e: React.MouseEvent) => {
+		e.stopPropagation();
+		void navigator.clipboard.writeText(id);
+		setCopied(true);
+		setTimeout(() => setCopied(false), 1500);
+	};
+	return (
+		<button
+			type="button"
+			onClick={copy}
+			title={`Click to copy full ID: ${id}`}
+			className="inline-flex items-center gap-1 font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 px-1.5 py-0.5 rounded transition-colors cursor-pointer"
+		>
+			{copied ? <Check className="size-2.5 text-emerald-500" /> : <Copy className="size-2.5 opacity-60" />}
+			{id.slice(0, 8)}...
+		</button>
+	);
+}
+
 export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 	const [globalFilter, setGlobalFilter] = useState("");
+	const [sorting, setSorting] = useState<SortingState>([]);
 	const [status, setStatus] = useState("all");
 	const statusLabel = status === "all" ? "All statuses" : status === "sold-out" ? "Sold out" : `${status[0].toUpperCase()}${status.slice(1)}`;
 
 	const columns = useMemo<ColumnDef<MenuItemRow>[]>(
 		() => [
 			{
+				accessorKey: "id",
+				header: ({ column }) => <SortHeader column={column} title="ID" />,
+				cell: ({ row }) => <IdBadge id={row.original.id} />,
+			},
+			{
 				id: "item",
-				header: "Item",
+				accessorKey: "nameEn",
+				header: ({ column }) => <SortHeader column={column} title="Item" />,
 				cell: ({ row }) => (
 					<div className="flex min-w-56 items-center gap-3">
 						{row.original.imageId ? (
@@ -88,10 +138,14 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 					</div>
 				),
 			},
-			{ accessorKey: "category", header: "Category" },
+			{
+				accessorKey: "category",
+				header: ({ column }) => <SortHeader column={column} title="Category" />,
+			},
 			{
 				id: "price",
-				header: "Price",
+				accessorKey: "priceKhr",
+				header: ({ column }) => <SortHeader column={column} title="Price" />,
 				cell: ({ row }) => (
 					<div className="whitespace-nowrap">
 						<p>{new Intl.NumberFormat("km-KH").format(row.original.priceKhr)} ៛</p>
@@ -106,7 +160,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 			},
 			{
 				accessorKey: "status",
-				header: "Status",
+				header: ({ column }) => <SortHeader column={column} title="Status" />,
 				filterFn: (row, columnId, value) => value === "all" || row.getValue(columnId) === value,
 				cell: ({ row }) => <StatusBadge status={row.original.status} />,
 			},
@@ -116,7 +170,10 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 				cell: ({ row }) =>
 					row.original.translationComplete ? <Badge variant="outline">Complete</Badge> : <Badge variant="destructive">Missing</Badge>,
 			},
-			{ accessorKey: "updatedAt", header: "Updated" },
+			{
+				accessorKey: "updatedAt",
+				header: ({ column }) => <SortHeader column={column} title="Updated" />,
+			},
 			{
 				id: "actions",
 				header: () => <span className="sr-only">Actions</span>,
@@ -140,10 +197,12 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 	const table = useReactTable({
 		data,
 		columns,
-		state: { globalFilter },
+		state: { globalFilter, sorting },
+		onSortingChange: setSorting,
 		onGlobalFilterChange: setGlobalFilter,
 		globalFilterFn: globalMenuFilter,
 		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		initialState: { pagination: { pageSize: 8 } },

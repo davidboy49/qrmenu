@@ -243,7 +243,12 @@ export default function SchedulesPage() {
 							{schedules.map((s) => (
 								<div key={s.id} className="flex items-center justify-between gap-4 p-4.5 hover:bg-stone-50/30 transition-colors">
 									<div>
-										<p className="font-semibold text-stone-900">{s.name}</p>
+										<div className="flex items-center gap-2">
+											<p className="font-semibold text-stone-900">{s.name}</p>
+											<span className="font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded" title={`Schedule ID: ${s.id}`}>
+												ID: {s.id.slice(0, 8)}...
+											</span>
+										</div>
 										<p className="mt-1 text-xs text-muted-foreground font-medium">
 											{s.windows
 												.split(",")

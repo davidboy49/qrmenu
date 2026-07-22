@@ -241,6 +241,9 @@ export default function RestaurantsClient({ initialRestaurants }: { initialResta
 												</Badge>
 											</div>
 											<div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500">
+												<span className="flex items-center gap-1 font-mono text-[10px] bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 px-1.5 py-0.5 rounded" title={`ID: ${restaurant.id}`}>
+													ID: {restaurant.id.slice(0, 8)}...
+												</span>
 												<span className="flex items-center gap-1">
 													<Globe className="size-3 text-stone-400" />
 													Slug: <code className="bg-stone-100 px-1 rounded font-mono">{restaurant.slug}</code>

@@ -430,6 +430,9 @@ export default function UsersPage() {
 										<div>
 											<div className="flex items-center gap-2 flex-wrap">
 												<span className="font-bold text-stone-900 text-base">{user.displayName}</span>
+												<span className="font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded" title={`User ID: ${user.id}`}>
+													ID: {user.id.slice(0, 8)}...
+												</span>
 												<Badge variant="outline" className="capitalize text-xs font-semibold">
 													{user.role}
 												</Badge>

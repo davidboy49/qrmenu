@@ -192,6 +192,12 @@ export default function CategoriesPage() {
 			)}
 
 			<Card className="border shadow-xs">
+				<CardHeader className="pb-3 border-b flex flex-row items-center justify-between">
+					<div>
+						<CardTitle className="text-base">Category List</CardTitle>
+						<CardDescription className="text-xs">Drag/move or sort categories</CardDescription>
+					</div>
+				</CardHeader>
 				<CardContent className="p-0">
 					{loading ? (
 						<div className="flex flex-col items-center justify-center p-12 text-muted-foreground">
@@ -230,7 +236,12 @@ export default function CategoriesPage() {
 												</Button>
 											</div>
 											<div>
-												<p className="font-semibold text-stone-900">{category.nameEn}</p>
+												<div className="flex items-center gap-2">
+													<p className="font-semibold text-stone-900">{category.nameEn}</p>
+													<span className="font-mono text-[10px] text-muted-foreground bg-stone-100 dark:bg-stone-800 px-1.5 py-0.5 rounded" title={`Category ID: ${category.id}`}>
+														ID: {category.id.slice(0, 8)}...
+													</span>
+												</div>
 												<p lang="km" className="mt-1 text-sm text-muted-foreground font-medium">
 													{category.nameKm}
 												</p>
