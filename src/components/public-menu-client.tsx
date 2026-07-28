@@ -296,7 +296,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                 <p style={{ color: T.gold, fontSize: "11px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase" }}>
                   {locale === "en" ? "Digital Menu" : "ម៉ឺនុយឌីជីថល"}
                 </p>
-                <h1 className="font-serif truncate mt-0.5" style={{ color: T.dark, fontSize: "1.45rem", fontWeight: 700, letterSpacing: "-0.015em", lineHeight: 1.15 }}>
+                <h1 className="font-sans font-bold truncate mt-0.5" style={{ color: T.dark, fontSize: "1.45rem", letterSpacing: "-0.015em", lineHeight: 1.15 }}>
                   {menu.restaurant}
                 </h1>
                 <p className="truncate opacity-75 font-sans" style={{ color: T.muted, fontSize: "10px", fontWeight: 500, marginTop: "1px" }}>
@@ -361,7 +361,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         {/* ── Main content area ── */}
         <div className="mx-auto max-w-2xl px-4 pt-4 sm:px-6">
 
-          {/* ── Carousel Slider ── */}
+          {/* ── Carousel Slider (Hidden for now) ── */}
+          {/*
           <div className="relative mb-6 overflow-hidden rounded-2xl h-52 shadow-md" style={{ border: `1px solid ${T.border}` }}>
             <div
               className="flex h-full w-full transition-transform duration-500 ease-out"
@@ -378,20 +379,16 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                           : "linear-gradient(135deg, #ffffff 0%, #f7f6f2 100%)",
                       }}
                     >
-                      {/* Subtle pattern background */}
                       <div className="absolute inset-0 pointer-events-none opacity-20" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "18px 18px" }} />
                       
-                      {/* Elegant thin inner border */}
                       <div className="absolute inset-3.5 rounded-xl pointer-events-none" style={{ border: `1px solid ${isDark ? "rgba(201,169,110,0.15)" : "rgba(201,169,110,0.25)"}` }} />
                       
-                      {/* Absolute corner accents for premium look */}
                       <div className="absolute top-4 left-4 w-2 h-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
                       <div className="absolute top-4 right-4 w-2 h-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
                       <div className="absolute bottom-4 left-4 w-2 h-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
                       <div className="absolute bottom-4 right-4 w-2 h-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
 
                       <div className="relative z-10 flex flex-col items-center justify-center text-center h-full">
-                        {/* Elegant gold hexagon-inspired badge with initials */}
                         <div 
                           className="flex size-14 items-center justify-center mb-3 transition-transform duration-700 hover:scale-105"
                           style={{ 
@@ -406,17 +403,14 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                           </span>
                         </div>
 
-                        {/* Welcome/Greeting subtitle */}
                         <p className="text-[10px] font-bold tracking-[0.25em]" style={{ color: T.gold }}>
                           {locale === "en" ? "WELCOME TO" : "ស្វាគមន៍មកកាន់"}
                         </p>
                         
-                        {/* Restaurant Name */}
                         <h2 className="font-serif leading-tight mt-1 px-4 truncate max-w-full" style={{ color: T.dark, fontSize: "1.65rem", fontWeight: 700, letterSpacing: "-0.015em" }}>
                           {menu.restaurant}
                         </h2>
 
-                        {/* Elegant Tagline / Sub-items */}
                         <p className="text-[10px] mt-2 flex items-center justify-center gap-2 opacity-80" style={{ color: T.muted }}>
                           <span>{locale === "en" ? "Quality" : "គុណភាពល្អ"}</span>
                           <span className="text-[6px] opacity-40">•</span>
@@ -450,7 +444,6 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               ))}
             </div>
 
-            {/* Indicator Dots */}
             {slides.length > 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
                 {slides.map((_, idx) => (
@@ -468,6 +461,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               </div>
             )}
           </div>
+          */}
 
           {/* ── Search Bar ── */}
           <div className="relative mb-6">
@@ -543,11 +537,13 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
 
                 {/* Grid Item Cards */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {group.items.map((item) => (
+                  {group.items.map((item) => {
+                    const isSoldOut = item.availabilityState === 'sold_out';
+                    return (
                     <article
                       key={item.id}
                       onClick={() => setSelectedItem(item)}
-                      className="group cursor-pointer rounded-2xl overflow-hidden flex flex-col transition-all duration-200"
+                      className={`group cursor-pointer rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${isSoldOut ? 'opacity-60' : ''}`}
                       style={{
                         background: T.card,
                         border: `1px solid ${T.border}`,
@@ -574,14 +570,22 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                             alt={item.name}
                             fill
                             sizes="(max-width: 640px) 50vw, 33vw"
-                            className="object-cover transition-transform duration-355 ease-out group-hover:scale-106"
+                            className={`object-cover transition-transform duration-355 ease-out group-hover:scale-106 ${isSoldOut ? 'grayscale' : ''}`}
                           />
                         ) : (
                           <div
-                            className="absolute inset-0 flex items-center justify-center font-serif font-bold text-2xl"
+                            className={`absolute inset-0 flex items-center justify-center font-serif font-bold text-2xl ${isSoldOut ? 'grayscale' : ''}`}
                             style={{ background: `linear-gradient(135deg, ${T.gold}18, ${T.green}10)`, color: T.gold }}
                           >
                             {item.name.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        {/* Sold Out Badge Overlay */}
+                        {isSoldOut && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                            <span className="font-bold tracking-widest text-white text-[10px] px-3 py-1 border border-white/40" style={{ background: 'rgba(0,0,0,0.6)', transform: 'rotate(-12deg)' }}>
+                              {locale === "en" ? "SOLD OUT" : "អស់"}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -608,7 +612,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                         </div>
                       </div>
                     </article>
-                  ))}
+                    );
+                  })}
                 </div>
               </section>
             ))}
@@ -697,13 +702,27 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       alt={selectedItem.name}
                       fill
                       sizes="(max-width: 640px) 100vw, 500px"
-                      className="object-cover"
+                      className={`object-cover ${selectedItem.availabilityState === 'sold_out' ? 'grayscale' : ''}`}
                       priority
                     />
+                    {selectedItem.availabilityState === 'sold_out' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                        <span className="font-bold tracking-widest text-white text-[14px] px-4 py-1.5 border border-white/40" style={{ background: 'rgba(0,0,0,0.6)', transform: 'rotate(-12deg)' }}>
+                          {locale === "en" ? "SOLD OUT" : "អស់"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="w-full flex items-center justify-center font-serif font-bold" style={{ aspectRatio: "4/3", fontSize: "4rem", background: "linear-gradient(135deg, #1C1814, #2C3D20)", color: T.gold }}>
+                  <div className={`relative w-full flex items-center justify-center font-serif font-bold ${selectedItem.availabilityState === 'sold_out' ? 'grayscale' : ''}`} style={{ aspectRatio: "4/3", fontSize: "4rem", background: "linear-gradient(135deg, #1C1814, #2C3D20)", color: T.gold }}>
                     {selectedItem.name.slice(0, 2).toUpperCase()}
+                    {selectedItem.availabilityState === 'sold_out' && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                        <span className="font-bold tracking-widest text-white text-[14px] px-4 py-1.5 border border-white/40" style={{ background: 'rgba(0,0,0,0.6)', transform: 'rotate(-12deg)' }}>
+                          {locale === "en" ? "SOLD OUT" : "អស់"}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
                 <div className="px-5 pt-5">

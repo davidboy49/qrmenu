@@ -9,6 +9,7 @@ export type PublicMenuItem = {
 	priceKhr: number | null;
 	priceUsd: number | null;
 	imageId: string | null;
+	availabilityState?: "available" | "sold_out";
 };
 
 export type AdminMenuItem = {

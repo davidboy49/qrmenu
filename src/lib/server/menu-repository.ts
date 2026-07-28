@@ -278,7 +278,8 @@ export async function listPublicMenu(
 				`SELECT mi.id, mi.category_id AS categoryId, c.code AS categoryCode, COALESCE(ct.name,'Menu') AS category, COALESCE(t.name,alt.name) AS name, alt.name AS secondaryName, t.description,
 				        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceKhr,
 				        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceUsd,
-				        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId
+				        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId,
+				        COALESCE(availability.state,'available') AS availabilityState
 				 FROM menu_items mi
 				 LEFT JOIN schedule_items si ON si.menu_item_id=mi.id
 				 LEFT JOIN item_availability availability ON availability.menu_item_id=mi.id AND availability.branch_id = ?
@@ -286,7 +287,7 @@ export async function listPublicMenu(
 				 LEFT JOIN menu_item_translations alt ON alt.menu_item_id=mi.id AND alt.locale=?
 				 LEFT JOIN categories c ON c.id=mi.category_id
 				 LEFT JOIN category_translations ct ON ct.category_id=c.id AND ct.locale=?
-				 WHERE mi.restaurant_id=? AND mi.status='active' AND COALESCE(availability.state,'available')='available' AND ${scheduleFilter}
+				 WHERE mi.restaurant_id=? AND mi.status='active' AND ${scheduleFilter}
 				 GROUP BY mi.id
 				 ORDER BY c.display_order, si.display_order, mi.display_order`
 			)
@@ -299,7 +300,8 @@ export async function listPublicMenu(
 				`SELECT mi.id, mi.category_id AS categoryId, COALESCE(ct.name,'Menu') AS category, COALESCE(t.name,alt.name) AS name, alt.name AS secondaryName, t.description,
 				        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceKhr,
 				        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceUsd,
-				        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId
+				        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId,
+				        COALESCE(availability.state,'available') AS availabilityState
 				 FROM menu_items mi
 				 LEFT JOIN schedule_items si ON si.menu_item_id=mi.id
 				 LEFT JOIN item_availability availability ON availability.menu_item_id=mi.id AND availability.branch_id = ?
@@ -307,7 +309,7 @@ export async function listPublicMenu(
 				 LEFT JOIN menu_item_translations alt ON alt.menu_item_id=mi.id AND alt.locale=?
 				 LEFT JOIN categories c ON c.id=mi.category_id
 				 LEFT JOIN category_translations ct ON ct.category_id=c.id AND ct.locale=?
-				 WHERE mi.restaurant_id=? AND mi.status='active' AND COALESCE(availability.state,'available')='available' AND ${scheduleFilter}
+				 WHERE mi.restaurant_id=? AND mi.status='active' AND ${scheduleFilter}
 				 GROUP BY mi.id
 				 ORDER BY c.display_order, si.display_order, mi.display_order`
 			)

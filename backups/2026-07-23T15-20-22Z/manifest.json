@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "createdAt": "2026-07-23T15:21:42.470Z",
+  "mode": "remote",
+  "database": "qrmenu-db",
+  "bucket": "qrmenu-media",
+  "objects": [
+    {
+      "key": "restaurants/323df97c-a99b-41b3-a97d-63187d6e43be/media/0cfd9bc4-75de-4301-acde-5896b893ce5d.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__323df97c-a99b-41b3-a97d-63187d6e43be__media__0cfd9bc4-75de-4301-acde-5896b893ce5d.jpeg"
+    },
+    {
+      "key": "restaurants/323df97c-a99b-41b3-a97d-63187d6e43be/media/4fb4439f-36b7-4c74-ad0d-b0ef8e772f0f.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__323df97c-a99b-41b3-a97d-63187d6e43be__media__4fb4439f-36b7-4c74-ad0d-b0ef8e772f0f.jpeg"
+    },
+    {
+      "key": "restaurants/323df97c-a99b-41b3-a97d-63187d6e43be/media/646ded4d-3ebf-4ffa-b580-b04ec4cb7569.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__323df97c-a99b-41b3-a97d-63187d6e43be__media__646ded4d-3ebf-4ffa-b580-b04ec4cb7569.jpeg"
+    },
+    {
+      "key": "restaurants/323df97c-a99b-41b3-a97d-63187d6e43be/media/7d0e9136-b48b-48d8-84a8-778fb3c66301.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__323df97c-a99b-41b3-a97d-63187d6e43be__media__7d0e9136-b48b-48d8-84a8-778fb3c66301.webp"
+    },
+    {
+      "key": "restaurants/323df97c-a99b-41b3-a97d-63187d6e43be/media/8425c743-4b53-402c-820c-66a19e9ca474.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__323df97c-a99b-41b3-a97d-63187d6e43be__media__8425c743-4b53-402c-820c-66a19e9ca474.jpeg"
+    },
+    {
+      "key": "restaurants/323df97c-a99b-41b3-a97d-63187d6e43be/media/b4e5c9ed-623d-4e11-ae63-8628708af9ff.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__323df97c-a99b-41b3-a97d-63187d6e43be__media__b4e5c9ed-623d-4e11-ae63-8628708af9ff.webp"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/02bfcbc2-0c0f-478b-8b0b-6923ce38f4df.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__02bfcbc2-0c0f-478b-8b0b-6923ce38f4df.webp"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/050e56a2-ccc1-4918-a486-8ae9d0227d4e.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__050e56a2-ccc1-4918-a486-8ae9d0227d4e.webp"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/4a9cdbc2-8127-40a2-80b2-e012f54e111a.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__4a9cdbc2-8127-40a2-80b2-e012f54e111a.jpeg"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/57fcdd57-4e5c-41fd-b9a8-8e5b102c62a7.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__57fcdd57-4e5c-41fd-b9a8-8e5b102c62a7.webp"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/5beb2f39-f9a0-4a0e-ad6e-c04a90315019.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__5beb2f39-f9a0-4a0e-ad6e-c04a90315019.jpeg"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/600b82fa-6ed9-482f-b2eb-4d3da8b12624.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__600b82fa-6ed9-482f-b2eb-4d3da8b12624.webp"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/bfd5bd6a-b270-44d1-8690-a59c3a9c0552.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__bfd5bd6a-b270-44d1-8690-a59c3a9c0552.webp"
+    },
+    {
+      "key": "restaurants/3d1b9868-4c26-4004-b950-f20851fe20ae/media/d9d9e8ba-7016-4f98-a90c-36b7232cf105.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__3d1b9868-4c26-4004-b950-f20851fe20ae__media__d9d9e8ba-7016-4f98-a90c-36b7232cf105.jpeg"
+    },
+    {
+      "key": "restaurants/e4706beb-8847-42c8-8dd3-daf6c03d7805/media/321e54e5-f26d-443b-8a88-7a6d83d11170.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__e4706beb-8847-42c8-8dd3-daf6c03d7805__media__321e54e5-f26d-443b-8a88-7a6d83d11170.jpeg"
+    },
+    {
+      "key": "restaurants/e4706beb-8847-42c8-8dd3-daf6c03d7805/media/4bb371c1-3f2d-4740-acd1-7cc70bfe6701.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__e4706beb-8847-42c8-8dd3-daf6c03d7805__media__4bb371c1-3f2d-4740-acd1-7cc70bfe6701.jpeg"
+    },
+    {
+      "key": "restaurants/e4706beb-8847-42c8-8dd3-daf6c03d7805/media/d5df338b-99e9-4bbf-8423-9a4a2e9b5308.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__e4706beb-8847-42c8-8dd3-daf6c03d7805__media__d5df338b-99e9-4bbf-8423-9a4a2e9b5308.webp"
+    },
+    {
+      "key": "restaurants/e4706beb-8847-42c8-8dd3-daf6c03d7805/media/e04696d0-236f-4bbf-a960-f2d23a619976.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__e4706beb-8847-42c8-8dd3-daf6c03d7805__media__e04696d0-236f-4bbf-a960-f2d23a619976.jpeg"
+    },
+    {
+      "key": "restaurants/rest-demo/media/064fa7d2-decb-470c-bd25-ea8906ef9493.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__rest-demo__media__064fa7d2-decb-470c-bd25-ea8906ef9493.jpeg"
+    },
+    {
+      "key": "restaurants/rest-demo/media/08abcdc0-123b-4ed5-b510-82cebbcebb3f.webp",
+      "contentType": "image/webp",
+      "file": "media/restaurants__rest-demo__media__08abcdc0-123b-4ed5-b510-82cebbcebb3f.webp"
+    },
+    {
+      "key": "restaurants/rest-demo/media/7a98a14b-1e12-4399-bd0d-c226f752653a.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__rest-demo__media__7a98a14b-1e12-4399-bd0d-c226f752653a.jpeg"
+    },
+    {
+      "key": "restaurants/rest-demo/media/9ceb762f-7fda-4fea-96cd-ffd36a90c8cb.jpeg",
+      "contentType": "image/jpeg",
+      "file": "media/restaurants__rest-demo__media__9ceb762f-7fda-4fea-96cd-ffd36a90c8cb.jpeg"
+    }
+  ]
+}

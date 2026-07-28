@@ -1,0 +1,155 @@
+
+--- 2026-07-23T13:16:19.703Z debug
+🪵  Writing logs to "E:\1. IT Project\QRMenu\.wrangler-check-obgjLs\wrangler.log"
+---
+
+--- 2026-07-23T13:16:19.703Z debug
+.env file not found at "E:\1. IT Project\QRMenu\.env". Continuing... For more details, refer to https://developers.cloudflare.com/workers/wrangler/system-environment-variables/
+---
+
+--- 2026-07-23T13:16:19.704Z debug
+.env file not found at "E:\1. IT Project\QRMenu\.env.local". Continuing... For more details, refer to https://developers.cloudflare.com/workers/wrangler/system-environment-variables/
+---
+
+--- 2026-07-23T13:16:19.709Z log
+
+ ⛅️ wrangler 4.112.0 (update available 4.113.0)
+───────────────────────────────────────────────
+---
+
+--- 2026-07-23T13:16:19.709Z log
+Resource location: local 
+
+---
+
+--- 2026-07-23T13:16:19.709Z log
+Use --remote if you want to access the remote instance.
+
+---
+
+--- 2026-07-23T13:16:19.731Z log
+🌀 Executing on local database qrmenu-db (0dda14c7-59bd-4503-b7c1-c04479c86db2) from .wrangler-check-obgjLs\v3\d1:
+---
+
+--- 2026-07-23T13:16:19.731Z log
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+---
+
+--- 2026-07-23T13:16:20.008Z debug
+Metrics dispatcher: Posting data {"deviceId":"c81271cd-46d7-4fc2-9958-92c1947e9fc4","event":"wrangler command started","timestamp":1784812580008,"properties":{"amplitude_session_id":1784812579715,"amplitude_event_id":0,"wranglerVersion":"4.112.0","wranglerMajorVersion":4,"wranglerMinorVersion":112,"wranglerPatchVersion":0,"osPlatform":"Windows","osVersion":"Windows 11 Pro","nodeVersion":24,"packageManager":"npm","isFirstUsage":false,"configFileType":"jsonc","isCI":false,"isPagesCI":false,"isWorkersCI":false,"isInteractive":false,"hasAssets":true,"agent":"codex","argsUsed":["local","persistTo"],"argsCombination":"local, persistTo","sanitizedCommand":"d1 migrations apply","sanitizedArgs":{"local":true},"currentAgentSkillsInstalled":"automatic"}}
+---
+
+--- 2026-07-23T13:16:20.387Z log
+🚣 1 command executed successfully.
+---
+
+--- 2026-07-23T13:16:20.387Z log
+🌀 Executing on local database qrmenu-db (0dda14c7-59bd-4503-b7c1-c04479c86db2) from .wrangler-check-obgjLs\v3\d1:
+---
+
+--- 2026-07-23T13:16:20.387Z log
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+---
+
+--- 2026-07-23T13:16:20.857Z log
+🚣 1 command executed successfully.
+---
+
+--- 2026-07-23T13:16:20.858Z log
+Migrations to be applied:
+---
+
+--- 2026-07-23T13:16:20.861Z log
+┌───────────────────────────┐
+│ name                      │
+├───────────────────────────┤
+│ 0001_initial.sql          │
+├───────────────────────────┤
+│ 0002_seed_demo.sql        │
+├───────────────────────────┤
+│ 0003_access_and_audit.sql │
+├───────────────────────────┤
+│ 0004_user_passwords.sql   │
+├───────────────────────────┤
+│ 0005_secure_passwords.sql │
+├───────────────────────────┤
+│ 0006_security_events.sql  │
+└───────────────────────────┘
+---
+
+--- 2026-07-23T13:16:20.861Z log
+? About to apply 6 migration(s)
+Your database may not be available to serve requests during the migration, continue?
+---
+
+--- 2026-07-23T13:16:20.861Z log
+🤖 Using fallback value in non-interactive context: yes
+---
+
+--- 2026-07-23T13:16:20.861Z log
+🌀 Executing on local database qrmenu-db (0dda14c7-59bd-4503-b7c1-c04479c86db2) from .wrangler-check-obgjLs\v3\d1:
+---
+
+--- 2026-07-23T13:16:20.861Z log
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+---
+
+--- 2026-07-23T13:16:21.852Z log
+🚣 25 commands executed successfully.
+---
+
+--- 2026-07-23T13:16:21.853Z log
+┌───────────────────────────┬────────┐
+│ name                      │ status │
+├───────────────────────────┼────────┤
+│ 0001_initial.sql          │ ✅     │
+├───────────────────────────┼────────┤
+│ 0002_seed_demo.sql        │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0003_access_and_audit.sql │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0004_user_passwords.sql   │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0005_secure_passwords.sql │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0006_security_events.sql  │ 🕒️    │
+└───────────────────────────┴────────┘
+---
+
+--- 2026-07-23T13:16:21.853Z log
+🌀 Executing on local database qrmenu-db (0dda14c7-59bd-4503-b7c1-c04479c86db2) from .wrangler-check-obgjLs\v3\d1:
+---
+
+--- 2026-07-23T13:16:21.853Z log
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+---
+
+--- 2026-07-23T13:16:22.338Z log
+🚣 11 commands executed successfully.
+---
+
+--- 2026-07-23T13:16:22.338Z log
+┌───────────────────────────┬────────┐
+│ name                      │ status │
+├───────────────────────────┼────────┤
+│ 0001_initial.sql          │ ✅     │
+├───────────────────────────┼────────┤
+│ 0002_seed_demo.sql        │ ✅     │
+├───────────────────────────┼────────┤
+│ 0003_access_and_audit.sql │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0004_user_passwords.sql   │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0005_secure_passwords.sql │ 🕒️    │
+├───────────────────────────┼────────┤
+│ 0006_security_events.sql  │ 🕒️    │
+└───────────────────────────┴────────┘
+---
+
+--- 2026-07-23T13:16:22.339Z log
+🌀 Executing on local database qrmenu-db (0dda14c7-59bd-4503-b7c1-c04479c86db2) from .wrangler-check-obgjLs\v3\d1:
+---
+
+--- 2026-07-23T13:16:22.339Z log
+🌀 To execute on your remote database, add a --remote flag to your wrangler command.
+---
