@@ -130,6 +130,10 @@
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
 	}
+  /* Removes the double-tap-to-zoom delay on touch devices without disabling pinch zoom. */
+  a, button, input, select, textarea, label, [role="button"] {
+    touch-action: manipulation;
+	}
   html {
     @apply font-sans;
 	}

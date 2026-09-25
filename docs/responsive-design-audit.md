@@ -49,6 +49,18 @@ After this change, **0 pages** scroll sideways at any of the three widths.
 
 15. Added `viewport` settings with `viewport-fit=cover` and light/dark `theme-color`. `body` uses `100dvh`. Animations are turned off app-wide when the OS "reduce motion" setting is on.
 
+### Design pass (repo skill `.agents/skills/ui-ux-pro-max`)
+
+The skill's generated palette (indigo, "vibrant block-based") did not suit this hospitality brand, so the existing gold and charcoal identity is kept. The skill's CRITICAL and HIGH priority rules were applied instead:
+
+16. **`color-contrast`.** New `goldText` token for text: `#8A6A2F` on light (about 5:1, up from 2.2:1). Dark mode keeps `#C9A96E` (about 7.6:1 on cards). The brand gold is still used for fills and borders.
+17. **`touch-target-size`.** Header controls are 44px. Category chips are 40px with a hit area extended past the visible pill. The footer link is 44px tall.
+18. **`number-tabular`.** Prices use tabular figures on the public menu and in the admin list.
+19. **`readable-font-size`.** Dish names are 15px, KHR prices 12px (were 11px), sheet labels 11px (were 10px), descriptions 15px.
+20. **`progressive-loading`.** Skeleton screens for `/menu/[restaurant]` (follows the OS light/dark setting) and for all admin routes.
+21. **Touch feedback, `tap-delay`.** Cards and chips shrink slightly when pressed. `touch-action: manipulation` is set on interactive elements.
+22. **Dishes without photos.** Get a dotted pattern with a utensils icon instead of two-letter initials.
+
 ## Proposed next steps (not done here)
 
 Ordered by impact.
@@ -62,7 +74,7 @@ Ordered by impact.
 
 ### Medium
 
-- **Gold text contrast on the light theme.** `#C9A96E` on white is about 2.2:1, below the WCAG AA minimum of 4.5:1. It's used for the KHR price, item codes and labels. Add a separate darker gold for text on light surfaces (e.g. `#8A6A2F`, about 5:1) and keep the current gold for backgrounds and fills.
+- ~~**Gold text contrast on the light theme.**~~ Done in the design pass below.
 - **Theme flash.** The server always renders the dark theme, then switches after load for light-mode guests. Store the choice in a cookie (read on the server) or set `data-theme` before first paint, and move the `themes` JS object into CSS variables.
 - **Dialogs.** Categories and Users build their own `fixed inset-0` overlays with no focus trapping and no Escape to close. Sign-out uses `window.confirm`. `MASTER.md` specifies `Dialog`/`AlertDialog`; use them.
 - **Admin dark mode is half done.** `.dark` makes `--primary` grey and `--sidebar-primary` blue, and many admin files hard-code `stone-*` colours. Either finish it (use tokens everywhere) or remove `.dark` so it can't be switched on by accident.
@@ -73,4 +85,4 @@ Ordered by impact.
 - Next 16 warns that `middleware.ts` is deprecated; rename it to `proxy.ts`.
 - If a global admin search is wanted, add a real ⌘K command menu (items, categories, pages). Otherwise leave the header as it is now.
 - The public menu shows the restaurant name three times at the top (header, welcome slide, photo slide caption). Consider using the welcome slide for a tagline, opening hours or Wi-Fi details instead.
-- Dishes without a photo show two-letter initials. A subtle category icon or the restaurant logo would look more polished.
+- ~~Dishes without a photo show two-letter initials.~~ Done in the design pass below.

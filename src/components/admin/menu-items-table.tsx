@@ -165,7 +165,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 				accessorKey: "priceKhr",
 				header: ({ column }) => <SortHeader column={column} title="Price" />,
 				cell: ({ row }) => (
-					<div className="whitespace-nowrap">
+					<div className="whitespace-nowrap tabular-nums">
 						<p>{new Intl.NumberFormat("km-KH").format(row.original.priceKhr)} ៛</p>
 						<p className="text-xs text-muted-foreground">${row.original.priceUsd.toFixed(2)}</p>
 					</div>
@@ -299,7 +299,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 									{!item.translationComplete && <Badge variant="destructive">Translation missing</Badge>}
 									<span className="truncate text-xs text-muted-foreground">{item.category}</span>
 								</div>
-								<p className="mt-2 text-sm">
+								<p className="mt-2 text-sm tabular-nums">
 									<span className="font-semibold">{new Intl.NumberFormat("km-KH").format(item.priceKhr)} ៛</span>
 									<span className="text-muted-foreground"> · ${item.priceUsd.toFixed(2)}</span>
 								</p>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, X, ChefHat, ArrowLeft, Sun, Moon, LayoutDashboard } from "lucide-react";
+import { Search, X, ChefHat, ArrowLeft, Sun, Moon, LayoutDashboard, UtensilsCrossed } from "lucide-react";
 import type { PublicMenuItem } from "@/lib/menu-types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -26,7 +26,8 @@ const themes = {
     bg: "#121212",
     dark: "#FAF7F2", // Cream text
     card: "#1C1C1E", // Dark gray card background
-    gold: "#C9A96E", // Premium gold accent
+    gold: "#C9A96E", // Premium gold accent (fills, borders)
+    goldText: "#C9A96E", // Gold for text — 7.6:1 on card, 8.6:1 on page
     green: "#34D399", // Emerald green for high contrast
     muted: "rgba(250, 247, 242, 0.55)",
     border: "rgba(255, 255, 255, 0.08)",
@@ -38,7 +39,8 @@ const themes = {
     bg: "#F9FAFB",
     dark: "#111827", // Charcoal text
     card: "#FFFFFF", // Pure white card background
-    gold: "#C9A96E", // Premium gold accent
+    gold: "#C9A96E", // Premium gold accent (fills, borders)
+    goldText: "#8A6A2F", // Darker gold for text — 5:1 on white (brand gold is only 2.2:1)
     green: "#1B4332", // Deep emerald green
     muted: "#4B5563",
     border: "#E5E7EB",
@@ -71,14 +73,14 @@ const formatKhr = (khr: number) => new Intl.NumberFormat("km-KH").format(khr);
 /* ─── Price chip (cards) ───────────────────────── */
 function PriceChip({ khr, usd, T }: { khr: number | null; usd: number | null; T: MenuTheme }) {
   return (
-    <div className="flex flex-col items-start gap-0.5">
+    <div className="flex flex-col items-start gap-0.5 tabular-nums">
       {usd !== null && (
         <span className="text-[1.05rem] font-bold tracking-tight" style={{ color: T.dark }}>
           ${(usd / 100).toFixed(2)}
         </span>
       )}
       {khr !== null && usd !== null && (
-        <span className="text-[11px] font-medium tracking-tight" style={{ color: T.gold }}>
+        <span className="text-xs font-medium tracking-tight" style={{ color: T.goldText }}>
           {formatKhr(khr)} ៛
         </span>
       )}
@@ -94,10 +96,10 @@ function PriceChip({ khr, usd, T }: { khr: number | null; usd: number | null; T:
 /* ─── Price block (detail view) ────────────────── */
 function PriceBlock({ khr, usd, T }: { khr: number | null; usd: number | null; T: MenuTheme }) {
   return (
-    <div className="flex items-center gap-4 py-1">
+    <div className="flex items-center gap-4 py-1 tabular-nums">
       {usd !== null && (
         <div className="flex flex-col">
-          <span className="mb-0.5 text-[10px] font-bold tracking-wider uppercase" style={{ color: T.gold }}>
+          <span className="mb-0.5 text-[11px] font-bold tracking-wider uppercase" style={{ color: T.goldText }}>
             USD Price
           </span>
           <span className="font-serif text-3xl font-bold" style={{ color: T.dark }}>
@@ -110,7 +112,7 @@ function PriceBlock({ khr, usd, T }: { khr: number | null; usd: number | null; T
       )}
       {khr !== null && (
         <div className="flex flex-col">
-          <span className="mb-0.5 text-[10px] font-bold tracking-wider uppercase" style={{ color: T.muted }}>
+          <span className="mb-0.5 text-[11px] font-bold tracking-wider uppercase" style={{ color: T.muted }}>
             KHR Estimate
           </span>
           <span className="text-xl font-bold" style={{ color: T.green }}>
@@ -315,7 +317,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                   className="flex size-10 shrink-0 items-center justify-center rounded-xl border font-serif text-base font-bold shadow-xs sm:size-12 sm:rounded-2xl sm:text-lg"
                   style={{
                     background: `linear-gradient(135deg, ${T.gold}25, ${T.gold}08)`,
-                    color: T.gold,
+                    color: T.goldText,
                     borderColor: `${T.gold}35`,
                   }}
                 >
@@ -324,7 +326,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               )}
 
               <div className="min-w-0">
-                <p className="hidden text-[11px] font-extrabold uppercase tracking-[0.15em] sm:block" style={{ color: T.gold }}>
+                <p className="hidden text-[11px] font-extrabold uppercase tracking-[0.15em] sm:block" style={{ color: T.goldText }}>
                   {isEn ? "Digital Menu" : "ម៉ឺនុយឌីជីថល"}
                 </p>
                 <h1 className="truncate font-serif text-xl font-bold leading-tight tracking-tight sm:text-2xl" style={{ color: T.dark }}>
@@ -341,7 +343,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                 href={`/menu/${slug}?lang=${isEn ? "km" : "en"}`}
                 hrefLang={isEn ? "km" : "en"}
                 aria-label={isEn ? "ប្តូរទៅភាសាខ្មែរ (Switch to Khmer)" : "Switch to English"}
-                className="inline-flex h-10 items-center gap-2 rounded-full px-3 text-xs font-bold shadow-xs transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)]"
+                className="inline-flex h-11 items-center gap-2 rounded-full px-3.5 text-xs font-bold shadow-xs transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)]"
                 style={{ background: controlBg, color: T.dark, border: `1px solid ${T.border}` }}
               >
                 {isEn ? (
@@ -371,7 +373,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="inline-flex size-10 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)]"
+                className="inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)]"
                 style={{ background: controlBg, color: T.dark, border: `1px solid ${T.border}` }}
                 aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
               >
@@ -382,8 +384,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                 <Link
                   href="/admin/menu-items"
                   aria-label="Open admin"
-                  className="inline-flex size-10 items-center justify-center gap-1.5 rounded-full text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)] sm:w-auto sm:px-3.5"
-                  style={{ background: `${T.gold}20`, color: T.gold, border: `1px solid ${T.gold}40` }}
+                  className="inline-flex size-11 items-center justify-center gap-1.5 rounded-full text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)] sm:w-auto sm:px-3.5"
+                  style={{ background: `${T.gold}20`, color: T.goldText, border: `1px solid ${T.gold}40` }}
                 >
                   <LayoutDashboard className="size-4" aria-hidden="true" />
                   <span className="hidden sm:inline">Admin</span>
@@ -396,7 +398,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
           {!searchQuery && categories.length > 1 && (
             <nav
               ref={tabsRef}
-              className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pb-2.5 sm:px-6 lg:px-8"
+              className="mx-auto flex max-w-6xl gap-2 overflow-x-auto px-4 pt-0.5 pb-2.5 sm:px-6 lg:px-8"
               style={{ scrollbarWidth: "none" }}
               aria-label={isEn ? "Menu categories" : "ប្រភេទម្ហូប"}
             >
@@ -409,7 +411,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                     type="button"
                     aria-current={active ? "true" : undefined}
                     onClick={() => scrollToCategory(cat.id)}
-                    className="h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--m-gold)]"
+                    className="relative h-10 shrink-0 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition-colors duration-200 before:absolute before:-inset-y-0.5 before:inset-x-0 before:content-[''] active:scale-[0.97] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[color:var(--m-gold)]"
                     style={
                       active
                         ? { background: T.gold, color: "#1C1814" }
@@ -484,12 +486,12 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                             clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
                           }}
                         >
-                          <span className="font-serif text-base font-bold tracking-widest sm:text-lg" style={{ color: T.gold }}>
+                          <span className="font-serif text-base font-bold tracking-widest sm:text-lg" style={{ color: T.goldText }}>
                             {menu.restaurant.substring(0, 2).toUpperCase()}
                           </span>
                         </div>
 
-                        <p className="text-[10px] font-bold tracking-[0.25em] sm:text-xs" style={{ color: T.gold }}>
+                        <p className="text-[10px] font-bold tracking-[0.25em] sm:text-xs" style={{ color: T.goldText }}>
                           {isEn ? "WELCOME TO" : "ស្វាគមន៍មកកាន់"}
                         </p>
 
@@ -601,7 +603,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                   {group.items.map((item) => (
                     <article
                       key={item.id}
-                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[color:var(--m-border)] shadow-sm transition-[transform,box-shadow,border-color] duration-200 focus-within:border-[color:var(--m-gold)] hover:border-[color:color-mix(in_srgb,var(--m-gold)_55%,transparent)] hover:shadow-xl motion-safe:hover:-translate-y-0.5"
+                      className="group relative flex flex-col overflow-hidden rounded-2xl border border-[color:var(--m-border)] shadow-sm transition-[transform,box-shadow,border-color] duration-200 focus-within:border-[color:var(--m-gold)] hover:border-[color:color-mix(in_srgb,var(--m-gold)_55%,transparent)] hover:shadow-xl motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[0.98]"
                       style={{ background: T.card }}
                     >
                       {/* Card photo image */}
@@ -617,15 +619,20 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                         ) : (
                           <div
                             aria-hidden="true"
-                            className="absolute inset-0 flex items-center justify-center font-serif text-2xl font-bold sm:text-3xl"
-                            style={{ background: `linear-gradient(135deg, ${T.gold}18, ${T.green}10)`, color: T.gold }}
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{
+                              background: `radial-gradient(circle at 30% 20%, ${T.gold}22, transparent 60%), linear-gradient(135deg, ${T.gold}10, ${T.green}0D)`,
+                            }}
                           >
-                            {item.name.slice(0, 2).toUpperCase()}
+                            <div className="absolute inset-0 opacity-[0.18]" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "14px 14px" }} />
+                            <span className="relative flex size-14 items-center justify-center rounded-full sm:size-16" style={{ border: `1px solid ${T.gold}55`, background: `${T.card}B3` }}>
+                              <UtensilsCrossed className="size-6 sm:size-7" style={{ color: T.goldText }} strokeWidth={1.5} />
+                            </span>
                           </div>
                         )}
                         <span
                           className="absolute top-2 left-2 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold backdrop-blur-sm"
-                          style={{ background: isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)", color: T.gold }}
+                          style={{ background: isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)", color: T.goldText }}
                         >
                           {itemCodesMap[item.id]}
                         </span>
@@ -634,12 +641,12 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       {/* Card details body */}
                       <div className="flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5">
                         <div>
-                          <h3 className="line-clamp-2 text-sm leading-snug font-semibold sm:text-[15px]" style={{ color: T.dark }}>
+                          <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold" style={{ color: T.dark }}>
                             {/* Stretched button makes the whole card tappable while keeping valid, accessible markup. */}
                             <button
                               type="button"
                               onClick={() => setSelectedItem(item)}
-                              className="text-left outline-none after:absolute after:inset-0 after:content-['']"
+                              className="cursor-pointer text-left outline-none after:absolute after:inset-0 after:content-['']"
                             >
                               {item.name}
                             </button>
@@ -684,8 +691,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
           <footer className="mt-12 flex justify-center pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))]" style={{ borderTop: `1px solid ${T.border}` }}>
             <Link
               href="/"
-              className="text-[10px] font-bold tracking-widest uppercase opacity-60 transition-opacity hover:opacity-100"
-              style={{ color: T.gold }}
+              className="inline-flex min-h-11 items-center text-[11px] font-bold tracking-widest uppercase opacity-80 transition-opacity hover:opacity-100"
+              style={{ color: T.goldText }}
             >
               Powered by QRMenu
             </Link>
@@ -726,16 +733,19 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                     />
                   </div>
                 ) : (
-                  <div aria-hidden="true" className="flex aspect-[16/9] w-full items-center justify-center font-serif text-6xl font-bold" style={{ background: "linear-gradient(135deg, #1C1814, #2C3D20)", color: T.gold }}>
-                    {selectedItem.name.slice(0, 2).toUpperCase()}
+                  <div aria-hidden="true" className="relative flex aspect-[16/9] w-full items-center justify-center" style={{ background: "linear-gradient(135deg, #1C1814, #2C3D20)" }}>
+                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "18px 18px" }} />
+                    <span className="relative flex size-20 items-center justify-center rounded-full" style={{ border: `1px solid ${T.gold}66` }}>
+                      <UtensilsCrossed className="size-9" style={{ color: T.gold }} strokeWidth={1.25} />
+                    </span>
                   </div>
                 )}
                 <div className="px-5 pt-5 sm:px-6">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-block rounded-full px-3 py-1 text-[10px] font-bold uppercase" style={{ background: `${T.gold}1A`, color: T.gold, letterSpacing: "0.15em" }}>
+                    <span className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase" style={{ background: `${T.gold}1A`, color: T.goldText, letterSpacing: "0.15em" }}>
                       {selectedItem.category}
                     </span>
-                    <span className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold" style={{ background: T.softBg, color: T.gold }}>
+                    <span className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold" style={{ background: T.softBg, color: T.goldText }}>
                       {itemCodesMap[selectedItem.id]}
                     </span>
                   </div>
@@ -743,7 +753,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                     {selectedItem.name}
                   </h2>
                   {selectedItem.secondaryName && (
-                    <p lang={isEn ? "km" : "en"} className="mt-1 text-sm font-semibold" style={{ color: T.gold }}>
+                    <p lang={isEn ? "km" : "en"} className="mt-1 text-sm font-semibold" style={{ color: T.goldText }}>
                       {selectedItem.secondaryName}
                     </p>
                   )}
@@ -755,10 +765,10 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
 
                   {selectedItem.description && (
                     <div className="mt-4">
-                      <p className="mb-1.5 text-[10px] font-bold uppercase" style={{ color: T.gold, letterSpacing: "0.12em" }}>
+                      <p className="mb-1.5 text-[11px] font-bold uppercase" style={{ color: T.goldText, letterSpacing: "0.12em" }}>
                         {isEn ? "Description" : "ការពិពណ៌នា"}
                       </p>
-                      <p className="text-sm leading-relaxed" style={{ color: T.muted }}>{selectedItem.description}</p>
+                      <p className="text-[15px] leading-relaxed" style={{ color: T.muted }}>{selectedItem.description}</p>
                     </div>
                   )}
                   <button
