@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 import "./globals.css";
@@ -9,6 +9,16 @@ export const metadata: Metadata = {
 		template: "%s | QR Menu",
 	},
 	description: "Create premium, responsive QR menus for your restaurant. Support for English & Khmer, real-time pricing updates, and high-end typography.",
+};
+
+export const viewport: Viewport = {
+	width: "device-width",
+	initialScale: 1,
+	viewportFit: "cover",
+	themeColor: [
+		{ media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+		{ media: "(prefers-color-scheme: dark)", color: "#121212" },
+	],
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

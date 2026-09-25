@@ -181,17 +181,17 @@ export default function RestaurantsClient({ initialRestaurants }: { initialResta
 	return (
 		<main className="flex flex-1 flex-col gap-6 p-4 md:p-6 lg:p-8">
 			{/* Top Header */}
-			<div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+			<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
 				<div>
 					<h1 className="text-2xl font-bold tracking-tight md:text-3xl flex items-center gap-2 text-stone-900">
-						<Building2 className="size-8 text-primary" />
+						<Building2 className="size-7 shrink-0 text-primary md:size-8" />
 						Organizations & Restaurants
 					</h1>
 					<p className="mt-1 text-sm text-stone-500">
 						Manage your multi-tenant hierarchy (Realms) and access menus of specific locations.
 					</p>
 				</div>
-				<div className="flex gap-2.5 shrink-0">
+				<div className="grid grid-cols-1 gap-2.5 min-[420px]:grid-cols-2 sm:flex sm:flex-wrap xl:shrink-0">
 					<Button 
 						variant="outline"
 						onClick={() => { setCopyError(""); setShowCopyStructure(true); }} 
@@ -227,15 +227,15 @@ export default function RestaurantsClient({ initialRestaurants }: { initialResta
 							{restaurants.map((restaurant, idx) => (
 								<div 
 									key={restaurant.id} 
-									className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 hover:bg-stone-50/40 transition-colors"
+									className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 sm:p-5 hover:bg-stone-50/40 transition-colors"
 								>
-									<div className="flex items-start gap-3">
+									<div className="flex min-w-0 items-start gap-3">
 										<div className="mt-1 flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary font-mono text-xs font-bold shrink-0" title={`UUID: ${restaurant.id}`}>
 											#{idx + 1}
 										</div>
-										<div>
-											<div className="flex items-center gap-2">
-												<span className="font-bold text-stone-900 text-base">{restaurant.name}</span>
+										<div className="min-w-0">
+											<div className="flex flex-wrap items-center gap-2">
+												<span className="font-bold text-stone-900 text-base break-words">{restaurant.name}</span>
 												<Badge variant={restaurant.status === "active" ? "default" : "secondary"}>
 													{restaurant.status}
 												</Badge>
@@ -258,7 +258,7 @@ export default function RestaurantsClient({ initialRestaurants }: { initialResta
 									</div>
 
 									{/* Action Buttons */}
-									<div className="flex items-center gap-2 sm:self-center">
+									<div className="grid grid-cols-2 gap-2 sm:flex sm:items-center lg:shrink-0 lg:self-center">
 										<Button 
 											variant="outline" 
 											onClick={() => {

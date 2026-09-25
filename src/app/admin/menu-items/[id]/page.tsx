@@ -127,7 +127,7 @@ export default function EditMenuItemPage() {
 				</CardHeader>
 				<CardContent>
 					<form action={submit} className="grid gap-6">
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label className="text-sm font-semibold text-stone-700" htmlFor="nameEn">
 									English name
@@ -163,7 +163,7 @@ export default function EditMenuItemPage() {
 								id="categoryId"
 								name="categoryId"
 								defaultValue={item.categoryId || ""}
-								className="min-h-11 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								className="min-h-11 w-full min-w-0 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								<option value="">Uncategorised</option>
 								{categories.map((cat) => (
@@ -174,7 +174,7 @@ export default function EditMenuItemPage() {
 							</select>
 						</div>
 
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label htmlFor="descriptionEn" className="text-sm font-semibold text-stone-700">
 									English description (Optional)
@@ -203,7 +203,7 @@ export default function EditMenuItemPage() {
 							</div>
 						</div>
 
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label className="text-sm font-semibold text-stone-700" htmlFor="priceKhr">
 									Price in KHR
@@ -232,7 +232,7 @@ export default function EditMenuItemPage() {
 							</div>
 						</div>
 
-						<div className="grid gap-4 sm:grid-cols-2 border-t pt-5">
+						<div className="grid gap-4 border-t pt-5 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label className="text-sm font-semibold text-stone-700">Primary photo</label>
 								<ImageUpload value={imageId} onChange={setImageId} name="imageId" />

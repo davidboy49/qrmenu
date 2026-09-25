@@ -207,7 +207,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 				),
 			},
 		],
-		[],
+		[categoryItemCodes],
 	);
 
 	// TanStack Table intentionally returns mutable callbacks; React Compiler safely skips this hook.
@@ -264,7 +264,58 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 				</div>
 			</div>
 
-			<div className="overflow-hidden rounded-xl border bg-card">
+			{/* Phones and small tablets: stacked cards instead of a 9-column table. */}
+			<ul className="grid gap-3 sm:grid-cols-2 lg:hidden" aria-label="Menu items">
+				{table.getRowModel().rows.map((row) => {
+					const item = row.original;
+					return (
+						<li key={row.id} className="relative flex gap-3 rounded-xl border bg-card p-3 shadow-xs transition-colors hover:border-primary/40">
+							{item.imageId ? (
+								<div className="relative size-16 shrink-0 overflow-hidden rounded-lg border bg-muted">
+									<Image src={`/api/media/${item.imageId}`} alt="" fill sizes="64px" className="object-cover" />
+								</div>
+							) : (
+								<div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary" aria-hidden="true">
+									{item.nameEn.slice(0, 2).toUpperCase()}
+								</div>
+							)}
+							<div className="min-w-0 flex-1">
+								<div className="flex items-start justify-between gap-2">
+									<div className="min-w-0">
+										<Link
+											href={`/admin/menu-items/${item.id}`}
+											className="block truncate font-medium after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+										>
+											{item.nameEn}
+										</Link>
+										<p lang="km" className="truncate text-sm text-muted-foreground">{item.nameKm || "Missing Khmer name"}</p>
+									</div>
+									<div className="relative z-10 shrink-0">
+										<IdBadge code={categoryItemCodes[item.id] || `ITEM-${row.index + 1}`} id={item.id} />
+									</div>
+								</div>
+								<div className="mt-2 flex flex-wrap items-center gap-1.5">
+									<StatusBadge status={item.status} />
+									{!item.translationComplete && <Badge variant="destructive">Translation missing</Badge>}
+									<span className="truncate text-xs text-muted-foreground">{item.category}</span>
+								</div>
+								<p className="mt-2 text-sm">
+									<span className="font-semibold">{new Intl.NumberFormat("km-KH").format(item.priceKhr)} ៛</span>
+									<span className="text-muted-foreground"> · ${item.priceUsd.toFixed(2)}</span>
+								</p>
+							</div>
+						</li>
+					);
+				})}
+				{!table.getRowModel().rows.length && (
+					<li className="rounded-xl border border-dashed p-8 text-center sm:col-span-2">
+						<p className="font-medium">No menu items found</p>
+						<p className="mt-1 text-sm text-muted-foreground">Try another search or clear the status filter.</p>
+					</li>
+				)}
+			</ul>
+
+			<div className="hidden overflow-hidden rounded-xl border bg-card lg:block">
 				<div className="overflow-x-auto">
 					<Table>
 						<TableHeader>
