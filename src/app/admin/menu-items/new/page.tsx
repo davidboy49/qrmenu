@@ -87,7 +87,7 @@ export default function NewMenuItemPage() {
 				</CardHeader>
 				<CardContent>
 					<form action={submit} className="grid gap-6">
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label htmlFor="name-en" className="text-sm font-semibold text-stone-700">
 									English name
@@ -123,7 +123,7 @@ export default function NewMenuItemPage() {
 							<select
 								id="category-id"
 								name="categoryId"
-								className="min-h-11 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+								className="min-h-11 w-full min-w-0 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								<option value="">Uncategorised</option>
 								{categories.map((cat) => (
@@ -134,7 +134,7 @@ export default function NewMenuItemPage() {
 							</select>
 						</div>
 
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label htmlFor="description-en" className="text-sm font-semibold text-stone-700">
 									English description (Optional)
@@ -161,7 +161,7 @@ export default function NewMenuItemPage() {
 							</div>
 						</div>
 
-						<div className="grid gap-4 sm:grid-cols-2">
+						<div className="grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label htmlFor="price-khr" className="text-sm font-semibold text-stone-700">
 									Price in KHR
@@ -190,7 +190,7 @@ export default function NewMenuItemPage() {
 							</div>
 						</div>
 
-						<div className="grid gap-4 sm:grid-cols-2 border-t pt-5">
+						<div className="grid gap-4 border-t pt-5 sm:grid-cols-2 [&>*]:min-w-0">
 							<div className="grid gap-2">
 								<label className="text-sm font-semibold text-stone-700">Primary photo</label>
 								<ImageUpload value={imageId} onChange={setImageId} name="imageId" />
@@ -204,7 +204,7 @@ export default function NewMenuItemPage() {
 									id="imageIdSelect"
 									value={imageId || ""}
 									onChange={(e) => setImageId(e.target.value || null)}
-									className="min-h-11 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+									className="min-h-11 w-full min-w-0 rounded-md border border-stone-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
 									<option value="">No photo</option>
 									{media.map((asset) => (

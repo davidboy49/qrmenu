@@ -280,8 +280,8 @@ export default function CategoriesPage() {
 								const isFirst = index === 0;
 								const isLast = index === items.length - 1;
 								return (
-									<div key={category.id} className="flex items-center justify-between gap-4 p-4.5 hover:bg-stone-50/30 transition-colors">
-										<div className="flex items-center gap-4">
+									<div key={category.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-4 sm:flex-nowrap sm:p-4.5 hover:bg-stone-50/30 transition-colors">
+										<div className="flex min-w-0 flex-[1_1_14rem] items-center gap-3 sm:gap-4">
 											{/* Move controls */}
 											<div className="flex flex-col gap-0.5">
 												<Button
@@ -305,9 +305,9 @@ export default function CategoriesPage() {
 													<ArrowDown className="size-4" />
 												</Button>
 											</div>
-											<div>
-												<div className="flex items-center gap-2">
-													<span className="font-mono text-xs font-bold text-stone-800 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded-md" title={`UUID: ${category.id}`}>
+											<div className="min-w-0">
+												<div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+													<span className="shrink-0 font-mono text-xs font-bold text-stone-800 bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 px-2 py-0.5 rounded-md" title={`UUID: ${category.id}`}>
 														ID: {category.code || deriveCode(category.nameEn)}
 													</span>
 													<p className="font-semibold text-stone-900">{category.nameEn}</p>
@@ -317,8 +317,8 @@ export default function CategoriesPage() {
 												</p>
 											</div>
 										</div>
-										<div className="flex items-center gap-4">
-											<span className="text-xs font-semibold text-stone-500">
+										<div className="ml-auto flex shrink-0 items-center gap-3 sm:gap-4">
+											<span className="whitespace-nowrap text-xs font-semibold text-stone-500">
 												{category.itemCount} items
 											</span>
 											<Badge variant={category.status === "active" ? "default" : "secondary"}>

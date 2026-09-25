@@ -275,7 +275,7 @@ export async function listPublicMenu(
 	try {
 		const res = await db
 			.prepare(
-				`SELECT mi.id, mi.category_id AS categoryId, c.code AS categoryCode, COALESCE(ct.name,'Menu') AS category, COALESCE(t.name,alt.name) AS name, alt.name AS secondaryName, t.description,
+				`SELECT mi.id, mi.category_id AS categoryId, c.code AS categoryCode, cen.name AS categoryNameEn, COALESCE(ct.name,'Menu') AS category, COALESCE(t.name,alt.name) AS name, alt.name AS secondaryName, t.description,
 				        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='KHR' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceKhr,
 				        (SELECT amount_minor FROM menu_item_prices WHERE menu_item_id=mi.id AND currency='USD' AND (branch_id = ? OR branch_id IS NULL) ORDER BY branch_id DESC LIMIT 1) AS priceUsd,
 				        (SELECT media_asset_id FROM menu_item_media WHERE menu_item_id=mi.id AND is_primary=1 LIMIT 1) AS imageId
@@ -286,13 +286,20 @@ export async function listPublicMenu(
 				 LEFT JOIN menu_item_translations alt ON alt.menu_item_id=mi.id AND alt.locale=?
 				 LEFT JOIN categories c ON c.id=mi.category_id
 				 LEFT JOIN category_translations ct ON ct.category_id=c.id AND ct.locale=?
+				 LEFT JOIN category_translations cen ON cen.category_id=c.id AND cen.locale='en'
 				 WHERE mi.restaurant_id=? AND mi.status='active' AND COALESCE(availability.state,'available')='available' AND ${scheduleFilter}
 				 GROUP BY mi.id
 				 ORDER BY c.display_order, si.display_order, mi.display_order`
 			)
 			.bind(...binds)
-			.all<PublicMenuItem>();
-		results = res.results || [];
+			.all<PublicMenuItem & { categoryNameEn?: string | null }>();
+		// Derive missing codes from the English name (as the admin does) so item codes match in every locale.
+		results = (res.results || []).map(({ categoryNameEn, ...item }) => ({
+			...item,
+			categoryCode: item.categoryCode
+				? String(item.categoryCode).toUpperCase()
+				: generateCategoryCode(String(categoryNameEn || item.category)),
+		}));
 	} catch {
 		const res = await db
 			.prepare(

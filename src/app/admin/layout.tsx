@@ -34,7 +34,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 					session={session}
 					activeContext={activeContext}
 				/>
-				<SidebarInset>
+				<SidebarInset className="min-w-0">
 					<AdminHeader 
 						restaurantSlug={activeContext.restaurantSlug} 
 						activeRestaurantId={activeContext.restaurantId}
