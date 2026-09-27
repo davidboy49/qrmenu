@@ -220,15 +220,9 @@ export default function PublicMenuClient({
     }));
   }, [filteredItems]);
 
-  const slides = useMemo(() => {
-    const list = [{ type: "welcome", id: "welcome" }];
-    if (menu.carousel && menu.carousel.length > 0) {
-      for (const mediaId of menu.carousel) {
-        list.push({ type: "media", id: mediaId });
-      }
-    }
-    return list;
-  }, [menu.carousel]);
+  // The header already names the restaurant, so the carousel only shows its own photos
+  // and is left out entirely when there are none, letting the menu start near the top.
+  const slides = useMemo(() => menu.carousel ?? [], [menu.carousel]);
 
   const itemCodesMap = useMemo(() => {
     const counters: Record<string, number> = {};
@@ -457,11 +451,12 @@ export default function PublicMenuClient({
         {/* ── Main content area ── */}
         <main className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
 
-          {/* ── Carousel Slider ── */}
+          {/* ── Photo carousel (only when the restaurant uploaded photos) ── */}
+          {slides.length > 0 && (
           <section
             aria-roledescription="carousel"
             aria-label={menu.restaurant}
-            className="relative mb-5 h-44 overflow-hidden rounded-2xl shadow-md sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl"
+            className="relative mb-5 h-44 overflow-hidden rounded-2xl bg-black shadow-md sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl"
             style={{ border: `1px solid ${T.border}`, touchAction: "pan-y" }}
             onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
             onTouchEnd={(e) => {
@@ -475,116 +470,54 @@ export default function PublicMenuClient({
               className="flex h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
               style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
             >
-              {slides.map((slide, idx) => (
+              {slides.map((mediaId, idx) => (
                 <div
-                  key={slide.id}
+                  key={mediaId}
                   className="relative h-full w-full shrink-0"
                   aria-roledescription="slide"
                   aria-label={`${idx + 1} / ${slides.length}`}
                   aria-hidden={idx !== carouselIndex}
                 >
-                  {slide.type === "welcome" ? (
-                    <div
-                      className="relative flex h-full w-full flex-col justify-center overflow-hidden p-6"
-                      style={{
-                        background: isDark
-                          ? "linear-gradient(135deg, #0d0c0a 0%, #15130f 50%, #0d0c0a 100%)"
-                          : "linear-gradient(135deg, #ffffff 0%, #f7f6f2 100%)",
-                      }}
-                    >
-                      {/* Subtle pattern background */}
-                      <div className="pointer-events-none absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "18px 18px" }} />
-
-                      {/* Elegant thin inner border */}
-                      <div className="pointer-events-none absolute inset-3.5 rounded-xl" style={{ border: `1px solid ${isDark ? "rgba(201,169,110,0.15)" : "rgba(201,169,110,0.25)"}` }} />
-
-                      {/* Corner accents */}
-                      <div className="absolute top-4 left-4 h-2 w-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
-                      <div className="absolute top-4 right-4 h-2 w-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
-                      <div className="absolute bottom-4 left-4 h-2 w-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
-                      <div className="absolute right-4 bottom-4 h-2 w-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
-
-                      <div className="relative z-10 flex h-full flex-col items-center justify-center text-center">
-                        {/* Gold hexagon badge with initials */}
-                        <div
-                          className="mb-3 flex size-12 items-center justify-center sm:size-14 lg:size-16"
-                          style={{
-                            background: isDark ? "rgba(201,169,110,0.05)" : "rgba(201,169,110,0.08)",
-                            border: `2px solid ${T.gold}`,
-                            clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-                          }}
-                        >
-                          <span className="font-serif text-base font-bold tracking-widest sm:text-lg" style={{ color: T.goldText }}>
-                            {menu.restaurant.substring(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-
-                        <p className="text-[10px] font-bold tracking-[0.25em] sm:text-xs" style={{ color: T.goldText }}>
-                          {isEn ? "WELCOME TO" : "ស្វាគមន៍មកកាន់"}
-                        </p>
-
-                        <h2 className="mt-1 max-w-full truncate px-4 font-serif text-2xl leading-tight font-bold tracking-tight sm:text-3xl lg:text-4xl" style={{ color: T.dark }}>
-                          {menu.restaurant}
-                        </h2>
-
-                        <p className="mt-2 flex items-center justify-center gap-2 text-[11px] opacity-80 sm:text-xs" style={{ color: T.muted }}>
-                          <span>{isEn ? "Quality" : "គុណភាពល្អ"}</span>
-                          <span aria-hidden="true" className="opacity-40">•</span>
-                          <span>{isEn ? "Fair Price" : "តម្លៃសមរម្យ"}</span>
-                          <span aria-hidden="true" className="opacity-40">•</span>
-                          <span>{isEn ? "Best Service" : "សេវាកម្មល្អ"}</span>
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative h-full w-full bg-black">
-                      <Image
-                        src={`/api/media/${slide.id}`}
-                        alt=""
-                        fill
-                        sizes="(max-width: 1152px) 100vw, 1152px"
-                        className="object-cover"
-                        priority={idx === 0}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                      <div className="absolute bottom-4 left-4 z-10 text-white sm:bottom-6 sm:left-6">
-                        <h3 className="font-serif text-lg leading-tight font-bold sm:text-2xl">
-                          {menu.restaurant}
-                        </h3>
-                        <p className="mt-0.5 text-xs text-white/75 sm:text-sm">
-                          {menu.branchName}
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                  <Image
+                    src={`/api/media/${mediaId}`}
+                    alt=""
+                    fill
+                    sizes="(max-width: 1152px) 100vw, 1152px"
+                    className="object-cover"
+                    priority={idx === 0}
+                  />
                 </div>
               ))}
             </div>
 
             {/* Indicator Dots — each dot has a 24px hit area around a small visual pill */}
             {slides.length > 1 && (
-              <div className="absolute bottom-1.5 left-1/2 z-20 flex -translate-x-1/2">
-                {slides.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setCarouselIndex(idx)}
-                    className="flex h-6 items-center justify-center px-1"
-                    aria-label={`Go to slide ${idx + 1}`}
-                    aria-current={idx === carouselIndex ? "true" : undefined}
-                  >
-                    <span
-                      className="block h-2 rounded-full transition-all duration-200"
-                      style={{
-                        background: idx === carouselIndex ? T.gold : "rgba(255, 255, 255, 0.45)",
-                        width: idx === carouselIndex ? "16px" : "8px",
-                      }}
-                    />
-                  </button>
-                ))}
-              </div>
+              <>
+                <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/45 to-transparent" />
+                <div className="absolute bottom-1.5 left-1/2 z-20 flex -translate-x-1/2">
+                  {slides.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCarouselIndex(idx)}
+                      className="flex h-6 items-center justify-center px-1"
+                      aria-label={`Go to slide ${idx + 1}`}
+                      aria-current={idx === carouselIndex ? "true" : undefined}
+                    >
+                      <span
+                        className="block h-2 rounded-full transition-all duration-200"
+                        style={{
+                          background: idx === carouselIndex ? T.gold : "rgba(255, 255, 255, 0.6)",
+                          width: idx === carouselIndex ? "16px" : "8px",
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
           </section>
+          )}
 
           {/* ── Search Bar ── */}
           <div className="relative mb-6 sm:mb-8 lg:max-w-md">
@@ -626,7 +559,43 @@ export default function PublicMenuClient({
                   <div className="h-px flex-1" style={{ background: `linear-gradient(to right, ${T.border}, transparent)` }} />
                 </div>
 
-                {/* Grid Item Cards */}
+                {/* A category without any photos reads better as a compact list than as empty cards. */}
+                {!group.items.some((item) => item.imageId) ? (
+                  <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
+                    {group.items.map((item) => (
+                      <li
+                        key={item.id}
+                        className="relative flex min-h-16 items-center gap-3 rounded-2xl border border-[color:var(--m-border)] px-4 py-3 shadow-sm transition-[box-shadow,border-color] duration-200 focus-within:border-[color:var(--m-gold)] hover:border-[color:color-mix(in_srgb,var(--m-gold)_55%,transparent)] hover:shadow-md motion-safe:active:scale-[0.99]"
+                        style={{ background: T.card }}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold" style={{ color: T.dark }}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedItem(item)}
+                              className="cursor-pointer text-left outline-none after:absolute after:inset-0 after:rounded-2xl after:content-['']"
+                            >
+                              {item.name}
+                            </button>
+                          </h3>
+                          <p className="mt-0.5 flex min-w-0 items-center gap-2 text-xs" style={{ color: T.muted }}>
+                            <span className="shrink-0 font-mono text-[10px] font-bold" style={{ color: T.goldText }}>
+                              {itemCodesMap[item.id]}
+                            </span>
+                            {item.secondaryName && (
+                              <span lang={isEn ? "km" : "en"} className="truncate">
+                                {item.secondaryName}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="shrink-0 [&>div]:items-end">
+                          <PriceChip khr={item.priceKhr} usd={item.priceUsd} T={T} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
                   {group.items.map((item) => (
                     <article
@@ -692,6 +661,7 @@ export default function PublicMenuClient({
                     </article>
                   ))}
                 </div>
+                )}
               </section>
             ))}
 
