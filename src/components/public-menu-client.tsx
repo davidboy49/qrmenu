@@ -18,6 +18,10 @@ interface PublicMenuClientProps {
   locale: "en" | "km-KH";
   slug: string;
   isAdmin?: boolean;
+  /** Theme resolved on the server (saved cookie or OS client hint), so the first paint is correct. */
+  initialTheme?: "dark" | "light";
+  /** False when the server had to guess; the client then checks the OS setting before showing the page. */
+  themeKnown?: boolean;
 }
 
 /* ─── Color Themes ────────────────────────────── */
@@ -68,6 +72,12 @@ const scrollContainerToChild = (container: HTMLElement | null, childId: string) 
 };
 
 type MenuTheme = (typeof themes)["dark"];
+const THEME_COOKIE = "menu-theme";
+const saveTheme = (value: "dark" | "light") => {
+  // A cookie (not localStorage) so the server can render the right theme on the next visit.
+  document.cookie = `${THEME_COOKIE}=${value}; path=/menu; max-age=31536000; SameSite=Lax`;
+};
+
 const formatKhr = (khr: number) => new Intl.NumberFormat("km-KH").format(khr);
 
 /* ─── Price chip (cards) ───────────────────────── */
@@ -124,8 +134,16 @@ function PriceBlock({ khr, usd, T }: { khr: number | null; usd: number | null; T
   );
 }
 
-export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }: PublicMenuClientProps) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+export default function PublicMenuClient({
+  menu,
+  locale,
+  slug,
+  isAdmin = false,
+  initialTheme = "dark",
+  themeKnown = false,
+}: PublicMenuClientProps) {
+  const [theme, setTheme] = useState<"dark" | "light">(initialTheme);
+  const [themeReady, setThemeReady] = useState(themeKnown);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<PublicMenuItem | null>(null);
   const [activeCategory, setActiveCategory] = useState("");
@@ -134,25 +152,29 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
   const stickyRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
-  // Initialize theme from localStorage, falling back to the guest's OS preference.
+  // The server couldn't tell the theme (first visit, no client hint): use a choice saved by the
+  // older localStorage version, else the OS setting, and save it so later visits render correctly.
   useEffect(() => {
+    if (themeKnown) return;
     let stored: string | null = null;
     try {
-      stored = localStorage.getItem("menu-theme");
+      stored = localStorage.getItem(THEME_COOKIE);
     } catch {}
-    if (stored === "dark" || stored === "light") {
-      setTheme(stored);
-    } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-      setTheme("light");
-    }
-  }, []);
+    const resolved =
+      stored === "dark" || stored === "light"
+        ? stored
+        : window.matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+    setTheme(resolved);
+    setThemeReady(true);
+    saveTheme(resolved);
+  }, [themeKnown]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    try {
-      localStorage.setItem("menu-theme", next);
-    } catch {}
+    saveTheme(next);
   };
 
   // Height of the sticky header + category bar, used to offset section scrolling.
@@ -257,6 +279,9 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         const el = document.getElementById(cat.id);
         if (el && pos >= el.getBoundingClientRect().top + window.scrollY) cur = cat.id;
       }
+      // A short last section never reaches the top, so select it once the page can't scroll further.
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (atBottom && categories.length > 0) cur = categories[categories.length - 1].id;
       if (cur && cur !== activeCategory) {
         setActiveCategory(cur);
         scrollContainerToChild(tabsRef.current, `tab-${cur}`);
@@ -280,7 +305,10 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
 
   return (
     <>
-      <div className="min-h-dvh" style={{ ...cssVars, background: T.bg, color: T.dark, transition: "background-color 0.2s ease" }}>
+      <div
+        className={`min-h-dvh${themeReady ? "" : " menu-theme-pending"}`}
+        style={{ ...cssVars, background: T.bg, color: T.dark, transition: "background-color 0.2s ease, opacity 0.15s ease" }}
+      >
 
         {/* ── Sticky header + category bar ── */}
         <div

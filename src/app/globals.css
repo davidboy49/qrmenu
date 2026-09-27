@@ -150,3 +150,11 @@
 		scroll-behavior: auto !important;
 	}
 }
+
+/* Public menu: when the server rendered the dark theme as a guess, keep the page hidden for
+   light-mode guests until the client switches to light, instead of flashing dark first. */
+@media (prefers-color-scheme: light) {
+	.menu-theme-pending {
+		opacity: 0;
+	}
+}
