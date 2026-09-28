@@ -134,6 +134,22 @@ function PriceBlock({ khr, usd, T }: { khr: number | null; usd: number | null; T
   );
 }
 
+/* ─── Sold-out badge ───────────────────────────── */
+// Inverted against the theme (charcoal on light, cream on dark) so it stands out on cards and photos.
+// Line height stays roomy because Khmer marks sit above and below the baseline.
+function SoldOutBadge({ isEn, isDark, className = "" }: { isEn: boolean; isDark: boolean; className?: string }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] leading-5 font-bold tracking-wide whitespace-nowrap uppercase shadow-sm ${className}`}
+      style={isDark ? { background: "#FAF7F2", color: "#121212" } : { background: "#1F2937", color: "#FFFFFF" }}
+    >
+      {isEn ? "Sold out" : "អស់ហើយ"}
+    </span>
+  );
+}
+
+const soldOutLabel = (isEn: boolean) => (isEn ? " (sold out)" : " (អស់ហើយ)");
+
 export default function PublicMenuClient({
   menu,
   locale,
@@ -568,7 +584,7 @@ export default function PublicMenuClient({
                         className="relative flex min-h-16 items-center gap-3 rounded-2xl border border-[color:var(--m-border)] px-4 py-3 shadow-sm transition-[box-shadow,border-color] duration-200 focus-within:border-[color:var(--m-gold)] hover:border-[color:color-mix(in_srgb,var(--m-gold)_55%,transparent)] hover:shadow-md motion-safe:active:scale-[0.99]"
                         style={{ background: T.card }}
                       >
-                        <div className="min-w-0 flex-1">
+                        <div className={`min-w-0 flex-1 ${item.soldOut ? "opacity-60" : ""}`}>
                           <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold" style={{ color: T.dark }}>
                             <button
                               type="button"
@@ -576,6 +592,7 @@ export default function PublicMenuClient({
                               className="cursor-pointer text-left outline-none after:absolute after:inset-0 after:rounded-2xl after:content-['']"
                             >
                               {item.name}
+                              {item.soldOut && <span className="sr-only">{soldOutLabel(isEn)}</span>}
                             </button>
                           </h3>
                           <p className="mt-0.5 flex min-w-0 items-center gap-2 text-xs" style={{ color: T.muted }}>
@@ -589,8 +606,11 @@ export default function PublicMenuClient({
                             )}
                           </p>
                         </div>
-                        <div className="shrink-0 [&>div]:items-end">
-                          <PriceChip khr={item.priceKhr} usd={item.priceUsd} T={T} />
+                        <div className="flex shrink-0 flex-col items-end gap-1.5 [&>div]:items-end">
+                          {item.soldOut && <SoldOutBadge isEn={isEn} isDark={isDark} />}
+                          <div className={item.soldOut ? "opacity-60" : ""}>
+                            <PriceChip khr={item.priceKhr} usd={item.priceUsd} T={T} />
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -611,12 +631,12 @@ export default function PublicMenuClient({
                             alt=""
                             fill
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-                            className="object-cover transition-transform duration-300 ease-out motion-safe:group-hover:scale-105"
+                            className={`object-cover transition-transform duration-300 ease-out motion-safe:group-hover:scale-105 ${item.soldOut ? "opacity-60 grayscale" : ""}`}
                           />
                         ) : (
                           <div
                             aria-hidden="true"
-                            className="absolute inset-0 flex items-center justify-center"
+                            className={`absolute inset-0 flex items-center justify-center ${item.soldOut ? "opacity-60 grayscale" : ""}`}
                             style={{
                               background: `radial-gradient(circle at 30% 20%, ${T.gold}22, transparent 60%), linear-gradient(135deg, ${T.gold}10, ${T.green}0D)`,
                             }}
@@ -633,10 +653,11 @@ export default function PublicMenuClient({
                         >
                           {itemCodesMap[item.id]}
                         </span>
+                        {item.soldOut && <SoldOutBadge isEn={isEn} isDark={isDark} className="absolute top-2 right-2" />}
                       </div>
 
                       {/* Card details body */}
-                      <div className="flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5">
+                      <div className={`flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5 ${item.soldOut ? "opacity-60" : ""}`}>
                         <div>
                           <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold" style={{ color: T.dark }}>
                             {/* Stretched button makes the whole card tappable while keeping valid, accessible markup. */}
@@ -646,6 +667,7 @@ export default function PublicMenuClient({
                               className="cursor-pointer text-left outline-none after:absolute after:inset-0 after:content-['']"
                             >
                               {item.name}
+                              {item.soldOut && <span className="sr-only">{soldOutLabel(isEn)}</span>}
                             </button>
                           </h3>
                           {item.secondaryName && (
@@ -726,7 +748,7 @@ export default function PublicMenuClient({
                       alt={selectedItem.name}
                       fill
                       sizes="(max-width: 640px) 100vw, 512px"
-                      className="object-cover"
+                      className={`object-cover ${selectedItem.soldOut ? "grayscale" : ""}`}
                       priority
                     />
                   </div>
@@ -753,6 +775,17 @@ export default function PublicMenuClient({
                   {selectedItem.secondaryName && (
                     <p lang={isEn ? "km" : "en"} className="mt-1 text-sm font-semibold" style={{ color: T.goldText }}>
                       {selectedItem.secondaryName}
+                    </p>
+                  )}
+
+                  {selectedItem.soldOut && (
+                    <p
+                      role="status"
+                      className="mt-4 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-semibold"
+                      style={{ background: T.softBg, border: `1px solid ${T.border}`, color: T.dark }}
+                    >
+                      <SoldOutBadge isEn={isEn} isDark={isDark} />
+                      {isEn ? "Not available right now. Please ask our staff." : "មិនមានលក់នៅពេលនេះទេ។ សូមសួរបុគ្គលិករបស់យើង។"}
                     </p>
                   )}
 
