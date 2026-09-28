@@ -21,6 +21,10 @@ interface PublicMenuClientProps {
   locale: "en" | "km-KH";
   slug: string;
   isAdmin?: boolean;
+  /** Theme resolved on the server (saved cookie or OS client hint), so the first paint is correct. */
+  initialTheme?: "dark" | "light";
+  /** False when the server had to guess; the client then checks the OS setting before showing the page. */
+  themeKnown?: boolean;
 }
 
 /* ─── Color Themes ────────────────────────────── */
@@ -71,6 +75,12 @@ const scrollContainerToChild = (container: HTMLElement | null, childId: string) 
 };
 
 type MenuTheme = (typeof themes)["dark"];
+const THEME_COOKIE = "menu-theme";
+const saveTheme = (value: "dark" | "light") => {
+  // A cookie (not localStorage) so the server can render the right theme on the next visit.
+  document.cookie = `${THEME_COOKIE}=${value}; path=/menu; max-age=31536000; SameSite=Lax`;
+};
+
 const formatKhr = (khr: number) => new Intl.NumberFormat("km-KH").format(khr);
 
 /* ─── Price chip (cards) ───────────────────────── */
@@ -124,8 +134,32 @@ function PriceGrid({ khr, usd, T }: { khr: number | null; usd: number | null; T:
   );
 }
 
-export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }: PublicMenuClientProps) {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+/* ─── Sold-out badge ───────────────────────────── */
+// Inverted against the theme (charcoal on light, cream on dark) so it stands out on cards and photos.
+// Line height stays roomy because Khmer marks sit above and below the baseline.
+function SoldOutBadge({ isEn, isDark, className = "" }: { isEn: boolean; isDark: boolean; className?: string }) {
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] leading-5 font-bold tracking-wide whitespace-nowrap uppercase shadow-sm ${className}`}
+      style={isDark ? { background: "#FAF7F2", color: "#121212" } : { background: "#1F2937", color: "#FFFFFF" }}
+    >
+      {isEn ? "Sold out" : "អស់ហើយ"}
+    </span>
+  );
+}
+
+const soldOutLabel = (isEn: boolean) => (isEn ? " (sold out)" : " (អស់ហើយ)");
+
+export default function PublicMenuClient({
+  menu,
+  locale,
+  slug,
+  isAdmin = false,
+  initialTheme = "dark",
+  themeKnown = false,
+}: PublicMenuClientProps) {
+  const [theme, setTheme] = useState<"dark" | "light">(initialTheme);
+  const [themeReady, setThemeReady] = useState(themeKnown);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<PublicMenuItem | null>(null);
   const [staffView, setStaffView] = useState(false);
@@ -135,25 +169,29 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
   const stickyRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef<number | null>(null);
 
-  // Initialize theme from localStorage, falling back to the guest's OS preference.
+  // The server couldn't tell the theme (first visit, no client hint): use a choice saved by the
+  // older localStorage version, else the OS setting, and save it so later visits render correctly.
   useEffect(() => {
+    if (themeKnown) return;
     let stored: string | null = null;
     try {
-      stored = localStorage.getItem("menu-theme");
+      stored = localStorage.getItem(THEME_COOKIE);
     } catch {}
-    if (stored === "dark" || stored === "light") {
-      setTheme(stored);
-    } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
-      setTheme("light");
-    }
-  }, []);
+    const resolved =
+      stored === "dark" || stored === "light"
+        ? stored
+        : window.matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark";
+    setTheme(resolved);
+    setThemeReady(true);
+    saveTheme(resolved);
+  }, [themeKnown]);
 
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    try {
-      localStorage.setItem("menu-theme", next);
-    } catch {}
+    saveTheme(next);
   };
 
   // Height of the sticky header + category bar, used to offset section scrolling.
@@ -214,8 +252,9 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
     setStaffView(false);
   };
 
-  // Only admin-chosen banner photos; with none, the carousel is not shown at all.
-  const slides = useMemo(() => (menu.carousel ?? []).map((id) => ({ id })), [menu.carousel]);
+  // The header already names the restaurant, so the carousel only shows its own photos
+  // and is left out entirely when there are none, letting the menu start near the top.
+  const slides = useMemo(() => menu.carousel ?? [], [menu.carousel]);
 
   const itemCodesMap = useMemo(() => {
     const counters: Record<string, number> = {};
@@ -266,6 +305,9 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         const el = document.getElementById(cat.id);
         if (el && pos >= el.getBoundingClientRect().top + window.scrollY) cur = cat.id;
       }
+      // A short last section never reaches the top, so select it once the page can't scroll further.
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+      if (atBottom && categories.length > 0) cur = categories[categories.length - 1].id;
       if (cur && cur !== activeCategory) {
         setActiveCategory(cur);
         scrollContainerToChild(tabsRef.current, `tab-${cur}`);
@@ -289,7 +331,10 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
 
   return (
     <>
-      <div className="min-h-dvh" style={{ ...cssVars, background: T.bg, color: T.dark, transition: "background-color 0.2s ease" }}>
+      <div
+        className={`min-h-dvh${themeReady ? "" : " menu-theme-pending"}`}
+        style={{ ...cssVars, background: T.bg, color: T.dark, transition: "background-color 0.2s ease, opacity 0.15s ease" }}
+      >
 
         {/* ── Sticky header + category bar ── */}
         <div
@@ -440,58 +485,49 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         {/* ── Main content area ── */}
         <main className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
 
-          {/* ── Carousel Slider (admins can hide it from Media) ── */}
+          {/* ── Photo carousel (only when the restaurant uploaded photos and admins haven't hidden it) ── */}
           {menu.showCarousel !== false && slides.length > 0 && (
-            <section
-              aria-roledescription="carousel"
-              aria-label={menu.restaurant}
-              className="relative mb-5 h-44 overflow-hidden rounded-2xl shadow-md sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl"
-              style={{ border: `1px solid ${T.border}`, touchAction: "pan-y" }}
-              onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-              onTouchEnd={(e) => {
-                if (touchStartX.current === null || slides.length <= 1) return;
-                const dx = e.changedTouches[0].clientX - touchStartX.current;
-                touchStartX.current = null;
-                if (Math.abs(dx) > 40) goToSlide(dx < 0 ? 1 : -1);
-              }}
+          <section
+            aria-roledescription="carousel"
+            aria-label={menu.restaurant}
+            className="relative mb-5 h-44 overflow-hidden rounded-2xl bg-black shadow-md sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl"
+            style={{ border: `1px solid ${T.border}`, touchAction: "pan-y" }}
+            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current === null || slides.length <= 1) return;
+              const dx = e.changedTouches[0].clientX - touchStartX.current;
+              touchStartX.current = null;
+              if (Math.abs(dx) > 40) goToSlide(dx < 0 ? 1 : -1);
+            }}
+          >
+            <div
+              className="flex h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
+              style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
             >
-              <div
-                className="flex h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
-                style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
-              >
-                {slides.map((slide, idx) => (
-                  <div
-                    key={slide.id}
-                    className="relative h-full w-full shrink-0"
-                    aria-roledescription="slide"
-                    aria-label={`${idx + 1} / ${slides.length}`}
-                    aria-hidden={idx !== carouselIndex}
-                  >
-                    <div className="relative h-full w-full bg-black">
-                      <Image
-                        src={`/api/media/${slide.id}`}
-                        alt=""
-                        fill
-                        sizes="(max-width: 1152px) 100vw, 1152px"
-                        className="object-cover"
-                        priority={idx === 0}
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                      <div className="absolute bottom-4 left-4 z-10 text-white sm:bottom-6 sm:left-6">
-                        <h3 className="text-lg leading-tight font-bold sm:text-2xl">
-                          {menu.restaurant}
-                        </h3>
-                        <p className="mt-0.5 text-xs text-white/75 sm:text-sm">
-                          {menu.branchName}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {slides.map((mediaId, idx) => (
+                <div
+                  key={mediaId}
+                  className="relative h-full w-full shrink-0"
+                  aria-roledescription="slide"
+                  aria-label={`${idx + 1} / ${slides.length}`}
+                  aria-hidden={idx !== carouselIndex}
+                >
+                  <Image
+                    src={`/api/media/${mediaId}`}
+                    alt=""
+                    fill
+                    sizes="(max-width: 1152px) 100vw, 1152px"
+                    className="object-cover"
+                    priority={idx === 0}
+                  />
+                </div>
+              ))}
+            </div>
 
-              {/* Indicator Dots — each dot has a 24px hit area around a small visual pill */}
-              {slides.length > 1 && (
+            {/* Indicator Dots — each dot has a 24px hit area around a small visual pill */}
+            {slides.length > 1 && (
+              <>
+                <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/45 to-transparent" />
                 <div className="absolute bottom-1.5 left-1/2 z-20 flex -translate-x-1/2">
                   {slides.map((_, idx) => (
                     <button
@@ -505,15 +541,16 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       <span
                         className="block h-2 rounded-full transition-all duration-200"
                         style={{
-                          background: idx === carouselIndex ? T.gold : "rgba(255, 255, 255, 0.45)",
+                          background: idx === carouselIndex ? T.gold : "rgba(255, 255, 255, 0.6)",
                           width: idx === carouselIndex ? "16px" : "8px",
                         }}
                       />
                     </button>
                   ))}
                 </div>
-              )}
-            </section>
+              </>
+            )}
+          </section>
           )}
 
           {/* ── Search Bar ── */}
@@ -556,7 +593,47 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                   <div className="h-px flex-1" style={{ background: `linear-gradient(to right, ${T.border}, transparent)` }} />
                 </div>
 
-                {/* Grid Item Cards */}
+                {/* A category without any photos reads better as a compact list than as empty cards. */}
+                {!group.items.some((item) => item.imageId) ? (
+                  <ul className="grid gap-2.5 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 lg:gap-4">
+                    {group.items.map((item) => (
+                      <li
+                        key={item.id}
+                        className="relative flex min-h-16 items-center gap-3 rounded-2xl border border-[color:var(--m-border)] px-4 py-3 shadow-sm transition-[box-shadow,border-color] duration-200 focus-within:border-[color:var(--m-gold)] hover:border-[color:color-mix(in_srgb,var(--m-gold)_55%,transparent)] hover:shadow-md motion-safe:active:scale-[0.99]"
+                        style={{ background: T.card }}
+                      >
+                        <div className={`min-w-0 flex-1 ${item.soldOut ? "opacity-60" : ""}`}>
+                          <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold" style={{ color: T.dark }}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedItem(item)}
+                              className="cursor-pointer text-left outline-none after:absolute after:inset-0 after:rounded-2xl after:content-['']"
+                            >
+                              {item.name}
+                              {item.soldOut && <span className="sr-only">{soldOutLabel(isEn)}</span>}
+                            </button>
+                          </h3>
+                          <p className="mt-0.5 flex min-w-0 items-center gap-2 text-xs" style={{ color: T.muted }}>
+                            <span className="shrink-0 font-mono text-[10px] font-bold" style={{ color: T.goldText }}>
+                              {itemCodesMap[item.id]}
+                            </span>
+                            {item.secondaryName && (
+                              <span lang={isEn ? "km" : "en"} className="truncate">
+                                {item.secondaryName}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-col items-end gap-1.5 [&>div]:items-end">
+                          {item.soldOut && <SoldOutBadge isEn={isEn} isDark={isDark} />}
+                          <div className={item.soldOut ? "opacity-60" : ""}>
+                            <PriceChip khr={item.priceKhr} usd={item.priceUsd} T={T} />
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
                   {group.items.map((item) => (
                     <article
@@ -572,12 +649,12 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                             alt=""
                             fill
                             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-                            className="object-cover transition-transform duration-300 ease-out motion-safe:group-hover:scale-105"
+                            className={`object-cover transition-transform duration-300 ease-out motion-safe:group-hover:scale-105 ${item.soldOut ? "opacity-60 grayscale" : ""}`}
                           />
                         ) : (
                           <div
                             aria-hidden="true"
-                            className="absolute inset-0 flex items-center justify-center"
+                            className={`absolute inset-0 flex items-center justify-center ${item.soldOut ? "opacity-60 grayscale" : ""}`}
                             style={{
                               background: `radial-gradient(circle at 30% 20%, ${T.gold}22, transparent 60%), linear-gradient(135deg, ${T.gold}10, ${T.green}0D)`,
                             }}
@@ -594,10 +671,11 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                         >
                           {itemCodesMap[item.id]}
                         </span>
+                        {item.soldOut && <SoldOutBadge isEn={isEn} isDark={isDark} className="absolute top-2 right-2" />}
                       </div>
 
                       {/* Card details body */}
-                      <div className="flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5">
+                      <div className={`flex flex-1 flex-col justify-between gap-2 p-3 sm:p-3.5 ${item.soldOut ? "opacity-60" : ""}`}>
                         <div>
                           <h3 className="line-clamp-2 text-[15px] leading-snug font-semibold" style={{ color: T.dark }}>
                             {/* Stretched button makes the whole card tappable while keeping valid, accessible markup. */}
@@ -607,6 +685,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                               className="cursor-pointer text-left outline-none after:absolute after:inset-0 after:content-['']"
                             >
                               {item.name}
+                              {item.soldOut && <span className="sr-only">{soldOutLabel(isEn)}</span>}
                             </button>
                           </h3>
                           {item.secondaryName && (
@@ -622,6 +701,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                     </article>
                   ))}
                 </div>
+                )}
               </section>
             ))}
 
@@ -693,7 +773,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       alt={selectedItem.name}
                       fill
                       sizes="(max-width: 640px) 100vw, 512px"
-                      className="object-cover"
+                      className={`object-cover ${selectedItem.soldOut ? "grayscale" : ""}`}
                       priority
                     />
                   </div>
@@ -716,6 +796,17 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                     </p>
                   )}
                 </div>
+
+                {selectedItem.soldOut && (
+                  <p
+                    role="status"
+                    className="mx-4 mt-5 flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-semibold"
+                    style={{ background: T.softBg, border: `1px solid ${T.border}`, color: T.dark }}
+                  >
+                    <SoldOutBadge isEn={isEn} isDark={isDark} />
+                    {isEn ? "Not available right now. Please ask our staff." : "មិនមានលក់នៅពេលនេះទេ។ សូមសួរបុគ្គលិករបស់យើង។"}
+                  </p>
+                )}
 
                 <PriceGrid khr={selectedItem.priceKhr} usd={selectedItem.priceUsd} T={T} />
 

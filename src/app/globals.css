@@ -151,6 +151,14 @@
 	}
 }
 
+/* Public menu: when the server rendered the dark theme as a guess, keep the page hidden for
+   light-mode guests until the client switches to light, instead of flashing dark first. */
+@media (prefers-color-scheme: light) {
+	.menu-theme-pending {
+		opacity: 0;
+	}
+}
+
 /* Guest Wi-Fi button: arcs light up bottom-to-top, like a phone finding signal. */
 @keyframes wifi-arc {
 	0%, 100% { opacity: 0.3; }

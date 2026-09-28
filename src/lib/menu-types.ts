@@ -17,6 +17,8 @@ export type PublicMenuItem = {
 	priceKhr: number | null;
 	priceUsd: number | null;
 	imageId: string | null;
+	/** Marked sold out for this branch today; still listed so guests know the dish exists. */
+	soldOut: boolean;
 };
 
 export type AdminMenuItem = {
