@@ -1,3 +1,11 @@
+export type WifiSecurity = "WPA" | "WEP" | "nopass";
+
+export type PublicWifi = {
+	ssid: string;
+	password: string | null;
+	security: WifiSecurity;
+};
+
 export type PublicMenuItem = {
 	id: string;
 	categoryId: string;

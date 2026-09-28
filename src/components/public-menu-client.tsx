@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, X, ChefHat, ArrowLeft, Sun, Moon, LayoutDashboard, UtensilsCrossed } from "lucide-react";
-import type { PublicMenuItem } from "@/lib/menu-types";
+import { Search, X, ChefHat, ChevronLeft, ArrowRight, Sun, Moon, LayoutDashboard, UtensilsCrossed } from "lucide-react";
+import type { PublicMenuItem, PublicWifi } from "@/lib/menu-types";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { WifiButton } from "@/components/wifi-sheet";
 
 interface PublicMenuClientProps {
   menu: {
@@ -13,6 +14,8 @@ interface PublicMenuClientProps {
     branchName: string;
     items: PublicMenuItem[];
     carousel?: string[];
+    showCarousel?: boolean;
+    wifi?: PublicWifi | null;
     logoId?: string | null;
   };
   locale: "en" | "km-KH";
@@ -93,33 +96,30 @@ function PriceChip({ khr, usd, T }: { khr: number | null; usd: number | null; T:
   );
 }
 
-/* ─── Price block (detail view) ────────────────── */
-function PriceBlock({ khr, usd, T }: { khr: number | null; usd: number | null; T: MenuTheme }) {
+/* ─── Price grid (detail view) ─────────────────── */
+function PriceGrid({ khr, usd, T }: { khr: number | null; usd: number | null; T: MenuTheme }) {
+  const cells = [
+    usd !== null && { label: "USD", value: `$${(usd / 100).toFixed(2)}`, color: T.goldText },
+    khr !== null && { label: "KHR", value: `${formatKhr(khr)} ៛`, color: T.dark },
+  ].filter(Boolean) as { label: string; value: string; color: string }[];
+  if (cells.length === 0) return null;
   return (
-    <div className="flex items-center gap-4 py-1 tabular-nums">
-      {usd !== null && (
-        <div className="flex flex-col">
-          <span className="mb-0.5 text-[11px] font-bold tracking-wider uppercase" style={{ color: T.goldText }}>
-            USD Price
-          </span>
-          <span className="font-serif text-3xl font-bold" style={{ color: T.dark }}>
-            ${(usd / 100).toFixed(2)}
-          </span>
-        </div>
-      )}
-      {usd !== null && khr !== null && (
-        <div className="h-10 w-px self-center" style={{ background: T.border }} />
-      )}
-      {khr !== null && (
-        <div className="flex flex-col">
-          <span className="mb-0.5 text-[11px] font-bold tracking-wider uppercase" style={{ color: T.muted }}>
-            KHR Estimate
-          </span>
-          <span className="text-xl font-bold" style={{ color: T.green }}>
-            {formatKhr(khr)} <span className="text-sm">៛</span>
+    <div
+      className="mx-4 mt-5 grid tabular-nums"
+      style={{ gridTemplateColumns: `repeat(${cells.length}, minmax(0, 1fr))`, borderTop: `1px solid ${T.gold}80`, borderBottom: `1px solid ${T.gold}80` }}
+    >
+      {cells.map((cell, i) => (
+        <div
+          key={cell.label}
+          className={`flex min-w-0 flex-col gap-0.5 py-3 ${i === 0 ? "pr-3" : "pl-3"}`}
+          style={{ borderLeft: i > 0 ? `1px solid ${T.border}` : undefined }}
+        >
+          <span className="text-xs font-bold" style={{ color: T.muted, letterSpacing: "0.06em" }}>{cell.label}</span>
+          <span className="truncate text-[1.875rem] leading-tight font-bold tracking-tight" style={{ color: cell.color }}>
+            {cell.value}
           </span>
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -128,6 +128,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<PublicMenuItem | null>(null);
+  const [staffView, setStaffView] = useState(false);
   const [activeCategory, setActiveCategory] = useState("");
   const [carouselIndex, setCarouselIndex] = useState(0);
   const tabsRef = useRef<HTMLElement>(null);
@@ -198,15 +199,23 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
     }));
   }, [filteredItems]);
 
-  const slides = useMemo(() => {
-    const list = [{ type: "welcome", id: "welcome" }];
-    if (menu.carousel && menu.carousel.length > 0) {
-      for (const mediaId of menu.carousel) {
-        list.push({ type: "media", id: mediaId });
-      }
-    }
-    return list;
-  }, [menu.carousel]);
+  // Previous/next follow the order dishes are shown in (category groups, current search applied).
+  const visibleItems = useMemo(() => groups.flatMap((g) => g.items), [groups]);
+  const selectedIndex = selectedItem ? visibleItems.findIndex((i) => i.id === selectedItem.id) : -1;
+  const prevItem = selectedIndex > 0 ? visibleItems[selectedIndex - 1] : null;
+  const nextItem = selectedIndex >= 0 && selectedIndex < visibleItems.length - 1 ? visibleItems[selectedIndex + 1] : null;
+  const selectedCategoryIndex = selectedItem ? categories.findIndex((c) => c.name === selectedItem.category) : -1;
+  const staffNames = {
+    km: (locale === "en" ? selectedItem?.secondaryName : selectedItem?.name) || selectedItem?.name || "",
+    en: locale === "en" ? selectedItem?.name : selectedItem?.secondaryName,
+  };
+  const closeItem = () => {
+    setSelectedItem(null);
+    setStaffView(false);
+  };
+
+  // Only admin-chosen banner photos; with none, the carousel is not shown at all.
+  const slides = useMemo(() => (menu.carousel ?? []).map((id) => ({ id })), [menu.carousel]);
 
   const itemCodesMap = useMemo(() => {
     const counters: Record<string, number> = {};
@@ -223,7 +232,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
   // Auto-advance the carousel, unless the guest prefers reduced motion or the tab is hidden.
   // Depending on carouselIndex restarts the timer after a manual swipe/tap.
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (menu.showCarousel === false || slides.length <= 1) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") {
@@ -231,7 +240,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
       }
     }, 5000);
     return () => clearInterval(timer);
-  }, [slides, carouselIndex]);
+  }, [slides, carouselIndex, menu.showCarousel]);
 
   const goToSlide = (delta: number) => {
     setCarouselIndex((prev) => (prev + delta + slides.length) % slides.length);
@@ -314,7 +323,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               ) : (
                 <div
                   aria-hidden="true"
-                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border font-serif text-base font-bold shadow-xs sm:size-12 sm:rounded-2xl sm:text-lg"
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl border text-base font-bold shadow-xs sm:size-12 sm:rounded-2xl sm:text-lg"
                   style={{
                     background: `linear-gradient(135deg, ${T.gold}25, ${T.gold}08)`,
                     color: T.goldText,
@@ -329,7 +338,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                 <p className="hidden text-[11px] font-extrabold uppercase tracking-[0.15em] sm:block" style={{ color: T.goldText }}>
                   {isEn ? "Digital Menu" : "ម៉ឺនុយឌីជីថល"}
                 </p>
-                <h1 className="truncate font-serif text-xl font-bold leading-tight tracking-tight sm:text-2xl" style={{ color: T.dark }}>
+                <h1 className="truncate text-base font-bold leading-tight tracking-tight sm:text-xl" style={{ color: T.dark }}>
                   {menu.restaurant}
                 </h1>
                 <p className="truncate text-xs" style={{ color: T.muted }}>
@@ -343,7 +352,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                 href={`/menu/${slug}?lang=${isEn ? "km" : "en"}`}
                 hrefLang={isEn ? "km" : "en"}
                 aria-label={isEn ? "ប្តូរទៅភាសាខ្មែរ (Switch to Khmer)" : "Switch to English"}
-                className="inline-flex h-11 items-center gap-2 rounded-full px-3.5 text-xs font-bold shadow-xs transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)]"
+                className="inline-flex h-11 items-center gap-1.5 rounded-full px-2.5 text-xs font-bold sm:gap-2 sm:px-3.5 shadow-xs transition-opacity hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--m-gold)]"
                 style={{ background: controlBg, color: T.dark, border: `1px solid ${T.border}` }}
               >
                 {isEn ? (
@@ -369,6 +378,8 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                 )}
                 <span lang={isEn ? "km" : "en"}>{isEn ? "ខ្មែរ" : "EN"}</span>
               </Link>
+
+              {menu.wifi && <WifiButton wifi={menu.wifi} slug={slug} isEn={isEn} T={T} controlBg={controlBg} cssVars={cssVars} />}
 
               <button
                 type="button"
@@ -429,86 +440,33 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         {/* ── Main content area ── */}
         <main className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
 
-          {/* ── Carousel Slider ── */}
-          <section
-            aria-roledescription="carousel"
-            aria-label={menu.restaurant}
-            className="relative mb-5 h-44 overflow-hidden rounded-2xl shadow-md sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl"
-            style={{ border: `1px solid ${T.border}`, touchAction: "pan-y" }}
-            onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
-            onTouchEnd={(e) => {
-              if (touchStartX.current === null || slides.length <= 1) return;
-              const dx = e.changedTouches[0].clientX - touchStartX.current;
-              touchStartX.current = null;
-              if (Math.abs(dx) > 40) goToSlide(dx < 0 ? 1 : -1);
-            }}
-          >
-            <div
-              className="flex h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
-              style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+          {/* ── Carousel Slider (admins can hide it from Media) ── */}
+          {menu.showCarousel !== false && slides.length > 0 && (
+            <section
+              aria-roledescription="carousel"
+              aria-label={menu.restaurant}
+              className="relative mb-5 h-44 overflow-hidden rounded-2xl shadow-md sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl"
+              style={{ border: `1px solid ${T.border}`, touchAction: "pan-y" }}
+              onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+              onTouchEnd={(e) => {
+                if (touchStartX.current === null || slides.length <= 1) return;
+                const dx = e.changedTouches[0].clientX - touchStartX.current;
+                touchStartX.current = null;
+                if (Math.abs(dx) > 40) goToSlide(dx < 0 ? 1 : -1);
+              }}
             >
-              {slides.map((slide, idx) => (
-                <div
-                  key={slide.id}
-                  className="relative h-full w-full shrink-0"
-                  aria-roledescription="slide"
-                  aria-label={`${idx + 1} / ${slides.length}`}
-                  aria-hidden={idx !== carouselIndex}
-                >
-                  {slide.type === "welcome" ? (
-                    <div
-                      className="relative flex h-full w-full flex-col justify-center overflow-hidden p-6"
-                      style={{
-                        background: isDark
-                          ? "linear-gradient(135deg, #0d0c0a 0%, #15130f 50%, #0d0c0a 100%)"
-                          : "linear-gradient(135deg, #ffffff 0%, #f7f6f2 100%)",
-                      }}
-                    >
-                      {/* Subtle pattern background */}
-                      <div className="pointer-events-none absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "18px 18px" }} />
-
-                      {/* Elegant thin inner border */}
-                      <div className="pointer-events-none absolute inset-3.5 rounded-xl" style={{ border: `1px solid ${isDark ? "rgba(201,169,110,0.15)" : "rgba(201,169,110,0.25)"}` }} />
-
-                      {/* Corner accents */}
-                      <div className="absolute top-4 left-4 h-2 w-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
-                      <div className="absolute top-4 right-4 h-2 w-2" style={{ borderTop: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
-                      <div className="absolute bottom-4 left-4 h-2 w-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderLeft: `1.5px solid ${T.gold}` }} />
-                      <div className="absolute right-4 bottom-4 h-2 w-2" style={{ borderBottom: `1.5px solid ${T.gold}`, borderRight: `1.5px solid ${T.gold}` }} />
-
-                      <div className="relative z-10 flex h-full flex-col items-center justify-center text-center">
-                        {/* Gold hexagon badge with initials */}
-                        <div
-                          className="mb-3 flex size-12 items-center justify-center sm:size-14 lg:size-16"
-                          style={{
-                            background: isDark ? "rgba(201,169,110,0.05)" : "rgba(201,169,110,0.08)",
-                            border: `2px solid ${T.gold}`,
-                            clipPath: "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-                          }}
-                        >
-                          <span className="font-serif text-base font-bold tracking-widest sm:text-lg" style={{ color: T.goldText }}>
-                            {menu.restaurant.substring(0, 2).toUpperCase()}
-                          </span>
-                        </div>
-
-                        <p className="text-[10px] font-bold tracking-[0.25em] sm:text-xs" style={{ color: T.goldText }}>
-                          {isEn ? "WELCOME TO" : "ស្វាគមន៍មកកាន់"}
-                        </p>
-
-                        <h2 className="mt-1 max-w-full truncate px-4 font-serif text-2xl leading-tight font-bold tracking-tight sm:text-3xl lg:text-4xl" style={{ color: T.dark }}>
-                          {menu.restaurant}
-                        </h2>
-
-                        <p className="mt-2 flex items-center justify-center gap-2 text-[11px] opacity-80 sm:text-xs" style={{ color: T.muted }}>
-                          <span>{isEn ? "Quality" : "គុណភាពល្អ"}</span>
-                          <span aria-hidden="true" className="opacity-40">•</span>
-                          <span>{isEn ? "Fair Price" : "តម្លៃសមរម្យ"}</span>
-                          <span aria-hidden="true" className="opacity-40">•</span>
-                          <span>{isEn ? "Best Service" : "សេវាកម្មល្អ"}</span>
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
+              <div
+                className="flex h-full w-full transition-transform duration-500 ease-out motion-reduce:transition-none"
+                style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+              >
+                {slides.map((slide, idx) => (
+                  <div
+                    key={slide.id}
+                    className="relative h-full w-full shrink-0"
+                    aria-roledescription="slide"
+                    aria-label={`${idx + 1} / ${slides.length}`}
+                    aria-hidden={idx !== carouselIndex}
+                  >
                     <div className="relative h-full w-full bg-black">
                       <Image
                         src={`/api/media/${slide.id}`}
@@ -520,7 +478,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                       <div className="absolute bottom-4 left-4 z-10 text-white sm:bottom-6 sm:left-6">
-                        <h3 className="font-serif text-lg leading-tight font-bold sm:text-2xl">
+                        <h3 className="text-lg leading-tight font-bold sm:text-2xl">
                           {menu.restaurant}
                         </h3>
                         <p className="mt-0.5 text-xs text-white/75 sm:text-sm">
@@ -528,35 +486,35 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Indicator Dots — each dot has a 24px hit area around a small visual pill */}
-            {slides.length > 1 && (
-              <div className="absolute bottom-1.5 left-1/2 z-20 flex -translate-x-1/2">
-                {slides.map((_, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setCarouselIndex(idx)}
-                    className="flex h-6 items-center justify-center px-1"
-                    aria-label={`Go to slide ${idx + 1}`}
-                    aria-current={idx === carouselIndex ? "true" : undefined}
-                  >
-                    <span
-                      className="block h-2 rounded-full transition-all duration-200"
-                      style={{
-                        background: idx === carouselIndex ? T.gold : "rgba(255, 255, 255, 0.45)",
-                        width: idx === carouselIndex ? "16px" : "8px",
-                      }}
-                    />
-                  </button>
+                  </div>
                 ))}
               </div>
-            )}
-          </section>
+
+              {/* Indicator Dots — each dot has a 24px hit area around a small visual pill */}
+              {slides.length > 1 && (
+                <div className="absolute bottom-1.5 left-1/2 z-20 flex -translate-x-1/2">
+                  {slides.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setCarouselIndex(idx)}
+                      className="flex h-6 items-center justify-center px-1"
+                      aria-label={`Go to slide ${idx + 1}`}
+                      aria-current={idx === carouselIndex ? "true" : undefined}
+                    >
+                      <span
+                        className="block h-2 rounded-full transition-all duration-200"
+                        style={{
+                          background: idx === carouselIndex ? T.gold : "rgba(255, 255, 255, 0.45)",
+                          width: idx === carouselIndex ? "16px" : "8px",
+                        }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* ── Search Bar ── */}
           <div className="relative mb-6 sm:mb-8 lg:max-w-md">
@@ -589,7 +547,7 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
               <section key={group.category} id={group.categoryId} aria-labelledby={`heading-${group.categoryId}`}>
                 {/* Section Header */}
                 <div className="mb-4 flex items-center gap-2.5">
-                  <h2 id={`heading-${group.categoryId}`} className="font-serif text-[1.35rem] leading-tight font-bold tracking-tight sm:text-2xl" style={{ color: T.dark }}>
+                  <h2 id={`heading-${group.categoryId}`} className="text-[1.35rem] leading-tight font-bold tracking-tight sm:text-2xl" style={{ color: T.dark }}>
                     {group.category}
                   </h2>
                   <span className="rounded-full px-2 py-0.5 text-xs font-bold" style={{ background: `${T.gold}16`, color: T.muted }}>
@@ -700,29 +658,36 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
         </main>
       </div>
 
-      {/* ── Item Detail Overlay ── */}
-      <Sheet open={!!selectedItem} onOpenChange={(open) => !open && setSelectedItem(null)}>
+      {/* ── Item Detail (full screen) ── */}
+      <Sheet open={!!selectedItem} onOpenChange={(open) => !open && closeItem()}>
         <SheetContent
           side="bottom"
           showCloseButton={false}
           aria-label={selectedItem?.name}
-          className="max-h-[90dvh] gap-0 overflow-hidden rounded-t-3xl p-0 outline-hidden sm:mx-auto sm:max-w-lg"
-          style={{ ...cssVars, background: T.bg, border: "none" }}
+          className="max-h-dvh gap-0 overflow-hidden rounded-none p-0 outline-hidden sm:mx-auto sm:max-w-lg"
+          style={{ ...cssVars, height: "100dvh", background: T.bg, border: "none" }}
         >
           {selectedItem && (
-            <div className="relative flex min-h-0 flex-1 flex-col" style={{ background: T.bg }}>
-              <div className="absolute top-2.5 left-1/2 z-10 h-1 w-10 -translate-x-1/2 rounded-full" style={{ background: "rgba(255,255,255,0.6)" }} />
-              <button
-                type="button"
-                onClick={() => setSelectedItem(null)}
-                aria-label={isEn ? "Close" : "បិទ"}
-                className="absolute top-3 right-3 z-10 flex size-10 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-md transition-colors hover:bg-black/60"
-              >
-                <X className="size-5" aria-hidden="true" />
-              </button>
-              <div className="min-h-0 overflow-y-auto overscroll-contain pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <div className="relative flex min-h-0 flex-1 flex-col pt-[env(safe-area-inset-top)]" style={{ background: T.bg }}>
+              {/* Top bar */}
+              <div className="flex shrink-0 items-center justify-between" style={{ borderBottom: `1px solid ${T.gold}4D` }}>
+                <button
+                  type="button"
+                  onClick={closeItem}
+                  className="flex min-h-13 items-center gap-1.5 px-4 text-[15px] font-bold transition-colors hover:bg-[var(--hover)]"
+                  style={{ color: T.dark, ["--hover" as string]: T.softBg }}
+                >
+                  <ChevronLeft className="size-5" aria-hidden="true" />
+                  {isEn ? "Menu" : "ម៉ឺនុយ"}
+                </button>
+                <span className="truncate px-4 text-[13px] font-bold" style={{ color: T.goldText }}>
+                  {String(selectedCategoryIndex + 1).padStart(2, "0")}&nbsp;&nbsp;{selectedItem.category}
+                </span>
+              </div>
+
+              <div key={selectedItem.id} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
                 {selectedItem.imageId ? (
-                  <div className="relative aspect-[4/3] w-full overflow-hidden" style={{ background: isDark ? "#1C1814" : "#F3F4F6" }}>
+                  <div className="relative aspect-square max-h-[60dvh] w-full overflow-hidden" style={{ background: isDark ? "#1C1814" : "#F3F4F6", borderBottom: `1px solid ${T.gold}4D` }}>
                     <Image
                       src={`/api/media/${selectedItem.imageId}`}
                       alt={selectedItem.name}
@@ -733,55 +698,80 @@ export default function PublicMenuClient({ menu, locale, slug, isAdmin = false }
                     />
                   </div>
                 ) : (
-                  <div aria-hidden="true" className="relative flex aspect-[16/9] w-full items-center justify-center" style={{ background: "linear-gradient(135deg, #1C1814, #2C3D20)" }}>
+                  <div aria-hidden="true" className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden" style={{ background: "linear-gradient(135deg, #1C1814, #2C3D20)" }}>
                     <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(${T.gold} 1px, transparent 1px)`, backgroundSize: "18px 18px" }} />
                     <span className="relative flex size-20 items-center justify-center rounded-full" style={{ border: `1px solid ${T.gold}66` }}>
                       <UtensilsCrossed className="size-9" style={{ color: T.gold }} strokeWidth={1.25} />
                     </span>
                   </div>
                 )}
-                <div className="px-5 pt-5 sm:px-6">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="inline-block rounded-full px-3 py-1 text-[11px] font-bold uppercase" style={{ background: `${T.gold}1A`, color: T.goldText, letterSpacing: "0.15em" }}>
-                      {selectedItem.category}
-                    </span>
-                    <span className="inline-block rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold" style={{ background: T.softBg, color: T.goldText }}>
-                      {itemCodesMap[selectedItem.id]}
-                    </span>
-                  </div>
-                  <h2 className="mt-2 font-serif text-2xl leading-tight font-bold tracking-tight sm:text-[1.75rem]" style={{ color: T.dark }}>
+
+                <div className="flex flex-col gap-0.5 px-4 pt-5">
+                  <h2 className="text-[1.75rem] leading-snug font-bold tracking-tight text-pretty" style={{ color: T.dark }}>
                     {selectedItem.name}
                   </h2>
                   {selectedItem.secondaryName && (
-                    <p lang={isEn ? "km" : "en"} className="mt-1 text-sm font-semibold" style={{ color: T.goldText }}>
+                    <p lang={isEn ? "km" : "en"} className="text-[15px] leading-relaxed" style={{ color: T.muted }}>
                       {selectedItem.secondaryName}
                     </p>
                   )}
+                </div>
 
-                  {/* Prices display block */}
-                  <div className="mt-4 rounded-2xl px-4 py-3" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-                    <PriceBlock khr={selectedItem.priceKhr} usd={selectedItem.priceUsd} T={T} />
-                  </div>
+                <PriceGrid khr={selectedItem.priceKhr} usd={selectedItem.priceUsd} T={T} />
 
-                  {selectedItem.description && (
-                    <div className="mt-4">
-                      <p className="mb-1.5 text-[11px] font-bold uppercase" style={{ color: T.goldText, letterSpacing: "0.12em" }}>
-                        {isEn ? "Description" : "ការពិពណ៌នា"}
-                      </p>
-                      <p className="text-[15px] leading-relaxed" style={{ color: T.muted }}>{selectedItem.description}</p>
-                    </div>
-                  )}
+                <div className="px-4 pt-5 pb-6">
                   <button
                     type="button"
-                    onClick={() => setSelectedItem(null)}
-                    className="mt-6 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-opacity hover:opacity-90"
-                    style={{ background: T.dark, color: isDark ? "#121212" : "#FFFFFF" }}
+                    onClick={() => setStaffView(true)}
+                    className="flex min-h-13 w-full items-center justify-between rounded-xl px-5 text-base font-bold transition-opacity hover:opacity-90 active:opacity-80"
+                    style={{ background: T.gold, color: "#121212" }}
                   >
-                    <ArrowLeft className="size-4" aria-hidden="true" />
-                    {isEn ? "Back to Menu" : "ត្រឡប់ទៅបញ្ជីមុខម្ហូបវិញ"}
+                    {isEn ? "Show to staff" : "បង្ហាញបុគ្គលិក"}
+                    <ArrowRight className="size-5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
+
+              {/* Previous / next dish */}
+              <div className="grid shrink-0 grid-cols-2 pb-[env(safe-area-inset-bottom)]" style={{ borderTop: `1px solid ${T.gold}4D` }}>
+                {[
+                  { item: prevItem, label: isEn ? "← Previous" : "← មុន", align: "text-left" },
+                  { item: nextItem, label: isEn ? "Next →" : "បន្ទាប់ →", align: "text-right" },
+                ].map(({ item, label, align }, i) => (
+                  <button
+                    key={label}
+                    type="button"
+                    disabled={!item}
+                    onClick={() => item && setSelectedItem(item)}
+                    className={`flex min-w-0 flex-col gap-0.5 px-4 pt-2.5 pb-3 transition-colors hover:bg-[var(--hover)] disabled:opacity-35 disabled:hover:bg-transparent ${align}`}
+                    style={{ ["--hover" as string]: T.softBg, borderRight: i === 0 ? `1px solid ${T.border}` : undefined }}
+                  >
+                    <span className="text-xs font-bold" style={{ color: T.goldText }}>{label}</span>
+                    <span className="truncate text-sm leading-normal font-bold" style={{ color: T.dark }}>{item?.name ?? "—"}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Show-to-staff screen: large names and price a waiter can read at a glance */}
+              {staffView && (
+                <button
+                  type="button"
+                  onClick={() => setStaffView(false)}
+                  className="absolute inset-0 z-20 flex flex-col justify-between px-5 pt-[calc(2rem+env(safe-area-inset-top))] pb-[calc(2rem+env(safe-area-inset-bottom))] text-left"
+                  style={{ background: T.gold, color: "#121212" }}
+                >
+                  <span className="flex flex-col gap-4">
+                    <span lang="km" className="text-lg leading-relaxed font-bold">សូមយកមុខម្ហូបនេះ</span>
+                    <span lang="km" className="text-[3.25rem] leading-[1.35] font-extrabold text-pretty">{staffNames.km}</span>
+                    <span aria-hidden="true" className="h-0.5" style={{ background: "#121212" }} />
+                    {staffNames.en && <span lang="en" className="text-[1.375rem] leading-snug font-bold">{staffNames.en}</span>}
+                    <span className="text-[1.375rem] font-bold tabular-nums">
+                      {[selectedItem.priceUsd !== null && `$${(selectedItem.priceUsd / 100).toFixed(2)}`, selectedItem.priceKhr !== null && `${formatKhr(selectedItem.priceKhr)} ៛`].filter(Boolean).join("  ·  ")}
+                    </span>
+                  </span>
+                  <span className="text-sm font-bold">{isEn ? "Tap anywhere to close" : "ចុចកន្លែងណាមួយដើម្បីបិទ"}</span>
+                </button>
+              )}
             </div>
           )}
         </SheetContent>

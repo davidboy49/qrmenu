@@ -11,6 +11,7 @@ import {
 	createRestaurant,
 	createBranch,
 	updateBranch,
+	updateBranchWifi,
 	createStaffUserWithPassword,
 	deleteStaffUser,
 	updateStaffUserStatus,
@@ -19,6 +20,7 @@ import {
 	updateRestaurant,
 } from "@/lib/server/menu-repository";
 import { canAccessRestaurant, moveStaffSession, readSession } from "@/lib/server/auth";
+import { z } from "zod";
 
 export async function getSession() {
 	return readSession();
@@ -227,6 +229,44 @@ export async function updateBranchAction(branchId: string, input: {
 	revalidatePath("/admin/branches");
 	revalidatePath("/admin/restaurants");
 	return result;
+}
+
+const wifiSchema = z
+	.object({
+		enabled: z.boolean(),
+		ssid: z.string().trim().max(32, "Network name can be at most 32 characters."),
+		password: z.string().max(63, "Password can be at most 63 characters."),
+		security: z.enum(["WPA", "WEP", "nopass"]),
+	})
+	.superRefine((v, ctx) => {
+		if (!v.enabled) return;
+		if (!v.ssid) ctx.addIssue({ code: "custom", message: "Enter the network name to show Wi-Fi on the menu." });
+		if (v.security === "WPA" && v.password.length < 8)
+			ctx.addIssue({ code: "custom", message: "A WPA password needs at least 8 characters." });
+		if (v.security === "WEP" && !v.password) ctx.addIssue({ code: "custom", message: "Enter the Wi-Fi password." });
+	});
+
+export async function updateBranchWifiAction(branchId: string, input: z.input<typeof wifiSchema>) {
+	const session = await getSession();
+	if (!session) {
+		throw new Error("Unauthorized");
+	}
+	const parsed = wifiSchema.safeParse(input);
+	if (!parsed.success) {
+		throw new Error(parsed.error.issues[0]?.message ?? "Invalid Wi-Fi settings.");
+	}
+	const restaurantId = await getRestaurantContextId();
+	const { enabled, ssid, password, security } = parsed.data;
+	const updated = await updateBranchWifi(restaurantId, branchId, {
+		enabled,
+		ssid: ssid || null,
+		password: password || null,
+		security,
+	});
+	if (!updated) {
+		throw new Error("Branch not found.");
+	}
+	revalidatePath("/admin/branches");
 }
 
 export async function getRestaurantDetails(restaurantId: string) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Plus, MapPin, Loader2, GitBranch, ArrowRight, AlertCircle } from "lucide-react";
+import { Plus, MapPin, Loader2, GitBranch, ArrowRight, AlertCircle, Wifi } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,10 +12,12 @@ import {
 	createBranchAction, 
 	switchContext,
 	copyBranchContextAction,
-	updateBranchAction
+	updateBranchAction,
+	updateBranchWifiAction
 } from "../actions";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import type { Branch } from "@/lib/server/menu-repository";
+import type { WifiSecurity } from "@/lib/menu-types";
 
 export default function BranchesPage() {
 	const [branches, setBranches] = useState<Branch[]>([]);
@@ -37,12 +39,20 @@ export default function BranchesPage() {
 	const [editSlug, setEditSlug] = useState("");
 	const [editTimezone, setEditTimezone] = useState("");
 	const [editError, setEditError] = useState("");
+	const [wifiEnabled, setWifiEnabled] = useState(false);
+	const [wifiSsid, setWifiSsid] = useState("");
+	const [wifiPassword, setWifiPassword] = useState("");
+	const [wifiSecurity, setWifiSecurity] = useState<WifiSecurity>("WPA");
 
 	useEffect(() => {
 		if (editingBranch) {
 			setEditName(editingBranch.name);
 			setEditSlug(editingBranch.slug);
 			setEditTimezone(editingBranch.timezone);
+			setWifiEnabled(!!editingBranch.wifi_enabled);
+			setWifiSsid(editingBranch.wifi_ssid ?? "");
+			setWifiPassword(editingBranch.wifi_password ?? "");
+			setWifiSecurity(editingBranch.wifi_security ?? "WPA");
 			setEditError("");
 		}
 	}, [editingBranch]);
@@ -62,6 +72,13 @@ export default function BranchesPage() {
 
 		startTransition(async () => {
 			try {
+				// Wi-Fi first: its validation is the likelier to fail, and nothing is saved if it does.
+				await updateBranchWifiAction(editingBranch!.id, {
+					enabled: wifiEnabled,
+					ssid: wifiSsid,
+					password: wifiPassword,
+					security: wifiSecurity
+				});
 				await updateBranchAction(editingBranch!.id, {
 					name: editName,
 					slug: editSlug,
@@ -306,6 +323,12 @@ export default function BranchesPage() {
 											<p className="mt-1 text-xs text-stone-400 font-mono">
 												Slug: {branch.slug} • Timezone: {branch.timezone}
 											</p>
+											{!!branch.wifi_enabled && branch.wifi_ssid && (
+												<p className="mt-1 flex items-center gap-1 text-xs font-medium text-stone-500">
+													<Wifi className="size-3" aria-hidden="true" />
+													Guest Wi-Fi: {branch.wifi_ssid}
+												</p>
+											)}
 										</div>
 										<div className="flex items-center gap-2">
 											<Button 
@@ -445,7 +468,7 @@ export default function BranchesPage() {
 
 					<form 
 						onSubmit={handleUpdateBranch}
-						className="flex-1 flex flex-col gap-5 pt-5"
+						className="-mx-6 flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 pt-5"
 					>
 						<div className="grid gap-2">
 							<label htmlFor="editBranchName" className="text-xs font-bold uppercase tracking-wider text-stone-500">
@@ -490,6 +513,82 @@ export default function BranchesPage() {
 								className="min-h-11" 
 							/>
 						</div>
+
+						<fieldset className="grid gap-4 border-t pt-5">
+							<legend className="sr-only">Guest Wi-Fi</legend>
+							<label className="flex min-h-11 cursor-pointer items-center justify-between gap-4 select-none">
+								<span className="grid gap-0.5">
+									<span className="flex items-center gap-1.5 text-sm font-semibold text-stone-800">
+										<Wifi className="size-4 text-primary" aria-hidden="true" />
+										Show Wi-Fi button on menu
+									</span>
+									<span className="text-xs text-stone-500">Guests at this branch can copy the password or scan a QR code to join.</span>
+								</span>
+								<input
+									type="checkbox"
+									role="switch"
+									checked={wifiEnabled}
+									onChange={(e) => setWifiEnabled(e.target.checked)}
+									className="peer sr-only"
+								/>
+								<span
+									aria-hidden="true"
+									className="relative h-6 w-11 shrink-0 rounded-full bg-stone-300 transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
+								/>
+							</label>
+
+							<div className="grid gap-2">
+								<label htmlFor="wifiSsid" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									Network name
+								</label>
+								<Input
+									id="wifiSsid"
+									value={wifiSsid}
+									onChange={(e) => setWifiSsid(e.target.value)}
+									maxLength={32}
+									autoComplete="off"
+									className="min-h-11"
+									placeholder="SabayKitchen_Guest"
+								/>
+							</div>
+
+							<div className="grid gap-2">
+								<label htmlFor="wifiSecurity" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+									Security
+								</label>
+								<select
+									id="wifiSecurity"
+									value={wifiSecurity}
+									onChange={(e) => setWifiSecurity(e.target.value as WifiSecurity)}
+									className="min-h-11 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none"
+								>
+									<option value="WPA">WPA / WPA2 / WPA3 (most routers)</option>
+									<option value="WEP">WEP (older routers)</option>
+									<option value="nopass">No password</option>
+								</select>
+							</div>
+
+							{wifiSecurity !== "nopass" && (
+								<div className="grid gap-2">
+									<label htmlFor="wifiPassword" className="text-xs font-bold uppercase tracking-wider text-stone-500">
+										Password
+									</label>
+									<Input
+										id="wifiPassword"
+										value={wifiPassword}
+										onChange={(e) => setWifiPassword(e.target.value)}
+										maxLength={63}
+										autoComplete="off"
+										spellCheck={false}
+										className="min-h-11 font-mono"
+									/>
+								</div>
+							)}
+
+							<p className="text-xs text-stone-500">
+								Anyone with the menu link can see this password. Use a guest network, not your office or staff Wi-Fi.
+							</p>
+						</fieldset>
 
 						{editError && (
 							<div className="flex items-center gap-2 text-sm font-semibold text-red-650 bg-red-50 border border-red-200 rounded-lg p-3">

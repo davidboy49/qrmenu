@@ -150,3 +150,12 @@
 		scroll-behavior: auto !important;
 	}
 }
+
+/* Guest Wi-Fi button: arcs light up bottom-to-top, like a phone finding signal. */
+@keyframes wifi-arc {
+	0%, 100% { opacity: 0.3; }
+	40% { opacity: 1; }
+}
+.wifi-arc {
+	animation: wifi-arc 1.8s ease-in-out infinite;
+}

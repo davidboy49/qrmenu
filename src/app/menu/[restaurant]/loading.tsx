@@ -27,7 +27,6 @@ export default function MenuLoading() {
 				</div>
 			</div>
 			<div className="mx-auto max-w-6xl px-4 pt-4 sm:px-6 sm:pt-6 lg:px-8">
-				<div className={`mb-5 h-44 rounded-2xl sm:mb-6 sm:h-60 lg:h-72 lg:rounded-3xl ${block}`} />
 				<div className={`mb-6 h-12 rounded-2xl sm:mb-8 lg:max-w-md ${block}`} />
 				<div className={`mb-4 h-7 w-44 rounded-md ${block}`} />
 				<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">

@@ -18,6 +18,8 @@ type Media = {
 export default function MediaPage() {
 	const [assets, setAssets] = useState<Media[]>([]);
 	const [carouselIds, setCarouselIds] = useState<string[]>([]);
+	const [carouselEnabled, setCarouselEnabled] = useState<boolean | null>(null);
+	const [carouselError, setCarouselError] = useState("");
 	const [croppingFile, setCroppingFile] = useState<File | null>(null);
 	const [isCropOpen, setIsCropOpen] = useState(false);
 	const [error, setError] = useState("");
@@ -33,6 +35,10 @@ export default function MediaPage() {
 			const cr = await fetch("/api/admin/carousel");
 			if (cr.ok) {
 				setCarouselIds((await cr.json()) as string[]);
+			}
+			const vr = await fetch("/api/admin/carousel/visibility");
+			if (vr.ok) {
+				setCarouselEnabled(((await vr.json()) as { enabled: boolean }).enabled);
 			}
 		} catch (err) {
 			console.error("Failed to load media assets", err);
@@ -63,6 +69,23 @@ export default function MediaPage() {
 			setCarouselIds(prev =>
 				active ? prev.filter(id => id !== mediaId) : [...prev, mediaId]
 			);
+		}
+	}
+
+	async function updateCarouselVisibility(enabled: boolean) {
+		const previous = carouselEnabled;
+		setCarouselEnabled(enabled);
+		setCarouselError("");
+		try {
+			const r = await fetch("/api/admin/carousel/visibility", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ enabled }),
+			});
+			if (!r.ok) throw new Error();
+		} catch {
+			setCarouselEnabled(previous);
+			setCarouselError("Couldn't save the carousel setting. Try again.");
 		}
 	}
 
@@ -134,6 +157,46 @@ export default function MediaPage() {
 					Upload and crop item photos or banners to Cloudflare R2.
 				</p>
 			</div>
+
+			<Card className="border shadow-xs">
+				<CardHeader>
+					<CardTitle>Menu carousel</CardTitle>
+					<CardDescription>
+						The banner at the top of the public menu. It shows the photos marked &quot;Show in Carousel&quot; below, and is hidden when none are marked.
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<label className="flex min-h-11 cursor-pointer items-center justify-between gap-4 select-none">
+						<span className="grid gap-0.5">
+							<span className="text-sm font-semibold text-stone-700">Show carousel on the menu</span>
+							<span className="text-xs text-muted-foreground">
+								{carouselEnabled === null
+									? "Loading…"
+									: carouselEnabled
+										? "Guests see the carousel above the search bar."
+										: "Hidden. Your carousel photos are kept and come back when you turn it on."}
+							</span>
+						</span>
+						<input
+							type="checkbox"
+							role="switch"
+							checked={carouselEnabled ?? false}
+							disabled={carouselEnabled === null}
+							onChange={(e) => void updateCarouselVisibility(e.target.checked)}
+							className="peer sr-only"
+						/>
+						<span
+							aria-hidden="true"
+							className="relative h-6 w-11 shrink-0 rounded-full bg-stone-300 transition-colors peer-checked:bg-primary peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-disabled:opacity-50 after:absolute after:top-0.5 after:left-0.5 after:size-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform peer-checked:after:translate-x-5"
+						/>
+					</label>
+					{carouselError && (
+						<p role="alert" className="mt-2 text-sm text-destructive font-medium">
+							{carouselError}
+						</p>
+					)}
+				</CardContent>
+			</Card>
 
 			<Card className="border shadow-xs">
 				<CardHeader>

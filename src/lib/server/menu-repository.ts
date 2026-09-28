@@ -1,5 +1,5 @@
 import { getCloudflareEnv } from "@/lib/server/cloudflare";
-import type { AdminMenuItem, PublicMenuItem } from "@/lib/menu-types";
+import type { AdminMenuItem, PublicMenuItem, PublicWifi, WifiSecurity } from "@/lib/menu-types";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { canAccessRestaurant, hashPassword, readSession } from "@/lib/server/auth";
@@ -61,6 +61,10 @@ export interface Branch {
 	name: string;
 	status: "active" | "inactive";
 	timezone: string;
+	wifi_enabled?: number;
+	wifi_ssid?: string | null;
+	wifi_password?: string | null;
+	wifi_security?: WifiSecurity;
 }
 
 // Master Admin Operations
@@ -117,7 +121,7 @@ export async function updateRestaurant(restaurantId: string, input: {
 export async function listBranches(restaurantId: string): Promise<Branch[]> {
 	const { DB: db } = await getCloudflareEnv();
 	const { results = [] } = await db.prepare(
-		"SELECT id, restaurant_id, slug, name, status, timezone FROM branches WHERE restaurant_id = ? ORDER BY name"
+		"SELECT id, restaurant_id, slug, name, status, timezone, wifi_enabled, wifi_ssid, wifi_password, wifi_security FROM branches WHERE restaurant_id = ? ORDER BY name"
 	).bind(restaurantId).all<Branch>();
 	return results;
 }
@@ -225,7 +229,7 @@ export async function listPublicMenu(
 	slug: string,
 	locale: "en" | "km-KH",
 	branchSlug?: string
-): Promise<{ restaurant: string; branchName: string; items: PublicMenuItem[]; carousel?: string[]; logoId?: string | null } | null> {
+): Promise<{ restaurant: string; branchName: string; items: PublicMenuItem[]; carousel?: string[]; showCarousel: boolean; wifi: PublicWifi | null; logoId?: string | null } | null> {
 	const { DB: db } = await getCloudflareEnv(); 
 	const restaurant = await db.prepare("SELECT id, name, logo_asset_id FROM restaurants WHERE slug=? AND status='active'").bind(slug).first<{id:string;name:string;logo_asset_id:string|null}>(); 
 	if (!restaurant) return null;
@@ -343,6 +347,18 @@ export async function listPublicMenu(
 	}
 
 	let carouselIds: string[] = [];
+	let showCarousel = true;
+	let wifi: PublicWifi | null = null;
+	try {
+		wifi = await getPublicWifi(branch.id);
+	} catch (e) {
+		console.error("Failed to read branch Wi-Fi (migration 0010 may not be applied):", e);
+	}
+	try {
+		showCarousel = await getCarouselVisibility(restaurant.id);
+	} catch (e) {
+		console.error("Failed to read restaurants.show_carousel (migration 0009 may not be applied):", e);
+	}
 	try {
 		const { results: carousel = [] } = await db.prepare("SELECT media_asset_id FROM restaurant_carousel_media WHERE restaurant_id=? ORDER BY display_order ASC").bind(restaurant.id).all<{media_asset_id:string}>();
 		carouselIds = carousel.map(c => c.media_asset_id);
@@ -355,6 +371,8 @@ export async function listPublicMenu(
 		branchName: branch.name,
 		items: results,
 		carousel: carouselIds,
+		showCarousel,
+		wifi,
 		logoId: restaurant.logo_asset_id,
 	};
 }
@@ -921,6 +939,45 @@ export async function listRestaurantCarousel(restaurantId: string): Promise<stri
 	const { DB: db } = await getCloudflareEnv();
 	const { results = [] } = await db.prepare("SELECT media_asset_id FROM restaurant_carousel_media WHERE restaurant_id=? ORDER BY display_order ASC").bind(restaurantId).all<{media_asset_id:string}>();
 	return results.map(r => r.media_asset_id);
+}
+
+async function getPublicWifi(branchId: string): Promise<PublicWifi | null> {
+	const { DB: db } = await getCloudflareEnv();
+	const row = await db
+		.prepare("SELECT wifi_enabled, wifi_ssid, wifi_password, wifi_security FROM branches WHERE id=?")
+		.bind(branchId)
+		.first<{ wifi_enabled: number; wifi_ssid: string | null; wifi_password: string | null; wifi_security: WifiSecurity }>();
+	if (!row || !row.wifi_enabled || !row.wifi_ssid) return null;
+	return {
+		ssid: row.wifi_ssid,
+		password: row.wifi_security === "nopass" ? null : row.wifi_password,
+		security: row.wifi_security,
+	};
+}
+
+/** Updates Wi-Fi only on a branch that belongs to the given restaurant; returns false otherwise. */
+export async function updateBranchWifi(
+	restaurantId: string,
+	branchId: string,
+	input: { enabled: boolean; ssid: string | null; password: string | null; security: WifiSecurity }
+): Promise<boolean> {
+	const { DB: db } = await getCloudflareEnv();
+	const result = await db
+		.prepare("UPDATE branches SET wifi_enabled=?, wifi_ssid=?, wifi_password=?, wifi_security=?, updated_at=? WHERE id=? AND restaurant_id=?")
+		.bind(input.enabled ? 1 : 0, input.ssid, input.security === "nopass" ? null : input.password, input.security, timestamp(), branchId, restaurantId)
+		.run();
+	return (result.meta?.changes ?? 0) > 0;
+}
+
+export async function getCarouselVisibility(restaurantId: string): Promise<boolean> {
+	const { DB: db } = await getCloudflareEnv();
+	const row = await db.prepare("SELECT show_carousel FROM restaurants WHERE id=?").bind(restaurantId).first<{ show_carousel: number }>();
+	return row ? row.show_carousel !== 0 : true;
+}
+
+export async function setCarouselVisibility(restaurantId: string, enabled: boolean): Promise<void> {
+	const { DB: db } = await getCloudflareEnv();
+	await db.prepare("UPDATE restaurants SET show_carousel=?, updated_at=? WHERE id=?").bind(enabled ? 1 : 0, timestamp(), restaurantId).run();
 }
 
 export async function toggleCarouselMedia(restaurantId: string, mediaId: string, active: boolean): Promise<boolean> {
