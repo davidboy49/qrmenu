@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/server/auth";
 import { getRestaurantContextId, listRestaurantCarousel, toggleCarouselMedia } from "@/lib/server/menu-repository";
 
 export async function GET() {
+	const auth = await requireApiSession();
+	if (auth.error) return auth.error;
+
 	try {
 		const restaurantId = await getRestaurantContextId();
 		const carousel = await listRestaurantCarousel(restaurantId);
@@ -13,6 +17,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+	const auth = await requireApiSession(request);
+	if (auth.error) return auth.error;
+
 	try {
 		const restaurantId = await getRestaurantContextId();
 		const { mediaId, active } = await request.json() as { mediaId: string; active: boolean };

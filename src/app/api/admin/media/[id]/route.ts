@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/server/auth";
 import { deleteMedia } from "@/lib/server/menu-repository";
 
 export async function DELETE(
 	request: Request,
 	{ params }: { params: Promise<{ id: string }> }
 ) {
+	const auth = await requireApiSession(request);
+	if (auth.error) return auth.error;
+
 	const { id } = await params;
 	try {
 		const success = await deleteMedia(id);

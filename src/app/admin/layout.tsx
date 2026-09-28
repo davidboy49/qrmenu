@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { AdminHeader } from "@/components/admin/admin-header";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { QueryProvider } from "@/components/providers/query-provider";
@@ -13,6 +14,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
 	const session = await getSession();
+	// Middleware only checks that a cookie exists; this checks that it is a live session.
+	if (!session) redirect("/login");
 	const activeContext = await getActiveContextDetails();
 
 	let restaurants: any[] = [];

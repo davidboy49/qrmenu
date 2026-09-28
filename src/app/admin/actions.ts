@@ -18,46 +18,10 @@ import {
 	copyBranchContext,
 	updateRestaurant,
 } from "@/lib/server/menu-repository";
+import { canAccessRestaurant, moveStaffSession, readSession } from "@/lib/server/auth";
 
 export async function getSession() {
-	try {
-		const cookieStore = await cookies();
-		const token = cookieStore.get("auth_token")?.value;
-		if (!token) return null;
-
-		if (token.startsWith("demo-token-qrmenu-admin-success")) {
-			const email = token.includes(":") ? token.split(":")[1] : "admin";
-			return { role: "admin", displayName: "Super Admin", email: email };
-		}
-
-		if (token.startsWith("staff-token-")) {
-			const staffId = token.replace("staff-token-", "");
-			const { DB: db } = await getCloudflareEnv();
-			const staff = await db
-				.prepare("SELECT email, display_name, role FROM staff_users WHERE id = ?")
-				.bind(staffId)
-				.first<{ email: string; display_name: string; role: string }>();
-
-			if (staff) {
-				const mappings = await db.prepare(
-					`SELECT u.id, u.restaurant_id, r.name 
-					 FROM staff_users u
-					 JOIN restaurants r ON r.id = u.restaurant_id
-					 WHERE u.email = ? AND u.status = 'active'`
-				).bind(staff.email).all<{ id: string; restaurant_id: string; name: string }>();
-
-				return {
-					role: staff.role,
-					displayName: staff.display_name,
-					email: staff.email,
-					restaurants: mappings.results || [],
-				};
-			}
-		}
-	} catch (e) {
-		console.error("Failed to get session:", e);
-	}
-	return null;
+	return readSession();
 }
 
 export async function isSuperAdmin(): Promise<boolean> {
@@ -66,6 +30,7 @@ export async function isSuperAdmin(): Promise<boolean> {
 }
 
 export async function getActiveContextDetails() {
+	if (!(await getSession())) throw new Error("Unauthorized");
 	const restaurantId = await getRestaurantContextId();
 	const branchId = await getBranchContextId();
 	const { DB: db } = await getCloudflareEnv();
@@ -91,21 +56,18 @@ export async function getActiveContextDetails() {
 }
 
 export async function switchContext(restaurantId: string, branchId?: string) {
+	const session = await getSession();
+	if (!session || !canAccessRestaurant(session, restaurantId)) {
+		throw new Error("Unauthorized");
+	}
+
 	const cookieStore = await cookies();
 	cookieStore.set("active_restaurant_id", restaurantId, { path: "/" });
 
-	const session = await getSession();
-	if (session && session.role !== "admin" && session.restaurants) {
-		const mapping = session.restaurants.find((r: any) => r.restaurant_id === restaurantId);
-		if (mapping) {
-			cookieStore.set("auth_token", `staff-token-${mapping.id}`, {
-				httpOnly: true,
-				secure: process.env.NODE_ENV === "production",
-				sameSite: "lax",
-				path: "/",
-				maxAge: 60 * 60 * 24 * 7,
-			});
-		}
+	if (session.role !== "admin") {
+		// Staff have one staff_users row per restaurant; act as the row for the new restaurant.
+		const mapping = session.restaurants?.find((r) => r.restaurant_id === restaurantId);
+		if (mapping) await moveStaffSession(mapping.id);
 	}
 
 	if (branchId) {
@@ -125,10 +87,13 @@ export async function switchContext(restaurantId: string, branchId?: string) {
 }
 
 export async function getRestaurantsList() {
+	if (!(await isSuperAdmin())) throw new Error("Unauthorized");
 	return await listRestaurants();
 }
 
 export async function getBranchesList(restaurantId: string) {
+	const session = await getSession();
+	if (!session || !canAccessRestaurant(session, restaurantId)) throw new Error("Unauthorized");
 	return await listBranches(restaurantId);
 }
 
