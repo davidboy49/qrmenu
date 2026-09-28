@@ -39,8 +39,9 @@ Open `/menu/sabay-kitchen` for the public menu and `/admin/menu-items` for the a
    ```
 
 5. In Cloudflare Zero Trust, create an Access application protecting `/admin/*` and `/api/admin/*`, and allow only the restaurant’s staff emails. Do not make admin routes public.
-6. Run `npm run deploy`.
-7. Optional: attach a custom domain in the Cloudflare dashboard and generate QR codes that point to `/menu/{restaurant-slug}`.
+6. Set the super-admin login as Worker secrets (`npx wrangler secret put SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD`). Locally, put them in `.dev.vars`. Staff accounts need a password set from **Users** before they can sign in; passwords are stored as PBKDF2 hashes and sessions live in the `admin_sessions` table.
+7. Run `npm run deploy`.
+8. Optional: attach a custom domain in the Cloudflare dashboard and generate QR codes that point to `/menu/{restaurant-slug}`.
 
 The manual GitHub deployment workflow requires `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets. The normal verification workflow needs no secrets.
 

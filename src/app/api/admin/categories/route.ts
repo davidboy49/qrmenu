@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/server/auth";
 import { z } from "zod";
 import { createCategory, listCategories, updateCategory } from "@/lib/server/menu-repository";
 
@@ -16,10 +17,16 @@ const updateSchema = z.object({
 });
 
 export async function GET() {
+	const auth = await requireApiSession();
+	if (auth.error) return auth.error;
+
 	return NextResponse.json(await listCategories());
 }
 
 export async function POST(request: Request) {
+	const auth = await requireApiSession(request);
+	if (auth.error) return auth.error;
+
 	const data = schema.safeParse(await request.json());
 	if (!data.success) {
 		return NextResponse.json({ error: "Enter both Khmer and English category names." }, { status: 400 });
@@ -28,6 +35,9 @@ export async function POST(request: Request) {
 }
 
 export async function PUT(request: Request) {
+	const auth = await requireApiSession(request);
+	if (auth.error) return auth.error;
+
 	const { searchParams } = new URL(request.url);
 	const action = searchParams.get("action");
 
@@ -54,5 +64,9 @@ export async function PUT(request: Request) {
 	if (!data.success) {
 		return NextResponse.json({ error: "Invalid category fields." }, { status: 400 });
 	}
-	return NextResponse.json(await updateCategory(id, data.data));
+	try {
+		return NextResponse.json(await updateCategory(id, data.data));
+	} catch {
+		return NextResponse.json({ error: "Category not found." }, { status: 404 });
+	}
 }

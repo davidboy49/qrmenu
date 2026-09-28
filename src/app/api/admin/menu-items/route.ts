@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireApiSession } from "@/lib/server/auth";
 import { z } from "zod";
 import { createMenuItem, listAdminMenuItems } from "@/lib/server/menu-repository";
 
@@ -12,5 +13,11 @@ const schema = z.object({
 	descriptionEn: z.string().optional().or(z.literal("")),
 	descriptionKm: z.string().optional().or(z.literal("")),
 });
-export async function GET(){return NextResponse.json(await listAdminMenuItems())}
-export async function POST(request:Request){const parsed=schema.safeParse(await request.json());if(!parsed.success)return NextResponse.json({error:"Please complete the required fields."},{status:400});return NextResponse.json(await createMenuItem(parsed.data),{status:201})}
+export async function GET(){
+	const auth = await requireApiSession();
+	if (auth.error) return auth.error;
+return NextResponse.json(await listAdminMenuItems())}
+export async function POST(request:Request){
+	const auth = await requireApiSession(request);
+	if (auth.error) return auth.error;
+const parsed=schema.safeParse(await request.json());if(!parsed.success)return NextResponse.json({error:"Please complete the required fields."},{status:400});return NextResponse.json(await createMenuItem(parsed.data),{status:201})}

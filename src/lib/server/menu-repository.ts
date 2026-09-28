@@ -1,25 +1,44 @@
 import { getCloudflareEnv } from "@/lib/server/cloudflare";
 import type { AdminMenuItem, PublicMenuItem } from "@/lib/menu-types";
 import { cookies } from "next/headers";
+import { cache } from "react";
+import { canAccessRestaurant, hashPassword, readSession } from "@/lib/server/auth";
 
 const timestamp = () => Math.floor(Date.now() / 1000);
 
-export async function getRestaurantContextId(): Promise<string> {
+// The active restaurant/branch come from cookies the browser controls, so for signed-in staff they
+// are checked against what that person may access: a staff member can't reach another restaurant
+// by editing a cookie, and a branch must belong to the active restaurant.
+const getAdminContext = cache(async (): Promise<{ restaurantId: string; branchId: string }> => {
+	let restaurantId = "rest-demo";
+	let branchId = "branch-main";
 	try {
 		const cookieStore = await cookies();
-		return cookieStore.get("active_restaurant_id")?.value || "rest-demo";
+		restaurantId = cookieStore.get("active_restaurant_id")?.value || restaurantId;
+		branchId = cookieStore.get("active_branch_id")?.value || branchId;
 	} catch {
-		return "rest-demo";
+		return { restaurantId, branchId };
 	}
+
+	const session = await readSession();
+	if (!session) return { restaurantId, branchId };
+	if (!canAccessRestaurant(session, restaurantId)) {
+		restaurantId = session.restaurants?.[0]?.restaurant_id ?? "";
+	}
+
+	const { DB: db } = await getCloudflareEnv();
+	const branch =
+		(await db.prepare("SELECT id FROM branches WHERE id = ? AND restaurant_id = ?").bind(branchId, restaurantId).first<{ id: string }>()) ??
+		(await db.prepare("SELECT id FROM branches WHERE restaurant_id = ? ORDER BY id LIMIT 1").bind(restaurantId).first<{ id: string }>());
+	return { restaurantId, branchId: branch?.id ?? "" };
+});
+
+export async function getRestaurantContextId(): Promise<string> {
+	return (await getAdminContext()).restaurantId;
 }
 
 export async function getBranchContextId(): Promise<string> {
-	try {
-		const cookieStore = await cookies();
-		return cookieStore.get("active_branch_id")?.value || "branch-main";
-	} catch {
-		return "branch-main";
-	}
+	return (await getAdminContext()).branchId;
 }
 
 // Master Admin Data Interfaces
@@ -474,6 +493,9 @@ export async function updateCategory(id: string, input: { nameEn: string; nameKm
 	const { DB: db } = await getCloudflareEnv();
 	const now = timestamp();
 	const code = (input.code?.trim() || generateCategoryCode(input.nameEn)).toUpperCase();
+	const restaurantId = await getRestaurantContextId();
+	const owned = await db.prepare("SELECT id FROM categories WHERE id=? AND restaurant_id=?").bind(id, restaurantId).first();
+	if (!owned) throw new Error("Category not found.");
 
 	try {
 		await db.batch([
@@ -510,8 +532,9 @@ export async function updateCategory(id: string, input: { nameEn: string; nameKm
 export async function reorderCategories(ids: string[]) {
 	const { DB: db } = await getCloudflareEnv();
 	const now = timestamp();
-	const statements = ids.map((id, index) => 
-		db.prepare("UPDATE categories SET display_order=?, updated_at=? WHERE id=?").bind(index, now, id)
+	const restaurantId = await getRestaurantContextId();
+	const statements = ids.map((id, index) =>
+		db.prepare("UPDATE categories SET display_order=?, updated_at=? WHERE id=? AND restaurant_id=?").bind(index, now, id, restaurantId)
 	);
 	await db.batch(statements);
 	return { success: true };
@@ -809,7 +832,7 @@ export async function createStaffUserWithPassword(input: {
 	emailVal = emailVal.toLowerCase();
 
 	// Preserve existing password if no new password is provided during updates
-	let finalPassword = input.password || null;
+	let finalPassword = input.password ? await hashPassword(input.password) : null;
 	if (!input.password) {
 		const existing = await db
 			.prepare("SELECT password FROM staff_users WHERE email = ? AND password IS NOT NULL LIMIT 1")

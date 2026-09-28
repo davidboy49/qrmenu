@@ -1,2 +1,9 @@
 import {NextResponse} from 'next/server';import {z} from 'zod';import {listAvailability,setAvailability} from '@/lib/server/menu-repository';
-const schema=z.object({itemId:z.string().uuid(),state:z.enum(['available','sold_out'])});export async function GET(){return NextResponse.json(await listAvailability())}export async function PATCH(request:Request){const data=schema.safeParse(await request.json());if(!data.success)return NextResponse.json({error:'Invalid availability update.'},{status:400});const result=await setAvailability(data.data.itemId,data.data.state);return result?NextResponse.json(result):NextResponse.json({error:'Not found'},{status:404})}
+import { requireApiSession } from "@/lib/server/auth";
+const schema=z.object({itemId:z.string().uuid(),state:z.enum(['available','sold_out'])});export async function GET(){
+	const auth = await requireApiSession();
+	if (auth.error) return auth.error;
+return NextResponse.json(await listAvailability())}export async function PATCH(request:Request){
+	const auth = await requireApiSession(request);
+	if (auth.error) return auth.error;
+const data=schema.safeParse(await request.json());if(!data.success)return NextResponse.json({error:'Invalid availability update.'},{status:400});const result=await setAvailability(data.data.itemId,data.data.state);return result?NextResponse.json(result):NextResponse.json({error:'Not found'},{status:404})}
