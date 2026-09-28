@@ -118,12 +118,26 @@ export async function updateRestaurant(restaurantId: string, input: {
 	return { success: true };
 }
 
+// True when a query failed only because a newer migration hasn't been applied to this database yet.
+function isMissingColumn(err: unknown): boolean {
+	return /no such column/i.test(String((err as Error)?.message ?? err));
+}
+
 export async function listBranches(restaurantId: string): Promise<Branch[]> {
 	const { DB: db } = await getCloudflareEnv();
-	const { results = [] } = await db.prepare(
-		"SELECT id, restaurant_id, slug, name, status, timezone, wifi_enabled, wifi_ssid, wifi_password, wifi_security FROM branches WHERE restaurant_id = ? ORDER BY name"
-	).bind(restaurantId).all<Branch>();
-	return results;
+	try {
+		const { results = [] } = await db.prepare(
+			"SELECT id, restaurant_id, slug, name, status, timezone, wifi_enabled, wifi_ssid, wifi_password, wifi_security FROM branches WHERE restaurant_id = ? ORDER BY name"
+		).bind(restaurantId).all<Branch>();
+		return results;
+	} catch (err) {
+		if (!isMissingColumn(err)) throw err;
+		// Migration 0010 (branch Wi-Fi) not applied yet: list branches without Wi-Fi.
+		const { results = [] } = await db.prepare(
+			"SELECT id, restaurant_id, slug, name, status, timezone FROM branches WHERE restaurant_id = ? ORDER BY name"
+		).bind(restaurantId).all<Branch>();
+		return results;
+	}
 }
 
 export async function createBranch(restaurantId: string, input: {
@@ -965,22 +979,42 @@ export async function updateBranchWifi(
 	input: { enabled: boolean; ssid: string | null; password: string | null; security: WifiSecurity }
 ): Promise<boolean> {
 	const { DB: db } = await getCloudflareEnv();
-	const result = await db
-		.prepare("UPDATE branches SET wifi_enabled=?, wifi_ssid=?, wifi_password=?, wifi_security=?, updated_at=? WHERE id=? AND restaurant_id=?")
-		.bind(input.enabled ? 1 : 0, input.ssid, input.security === "nopass" ? null : input.password, input.security, timestamp(), branchId, restaurantId)
-		.run();
-	return (result.meta?.changes ?? 0) > 0;
+	try {
+		const result = await db
+			.prepare("UPDATE branches SET wifi_enabled=?, wifi_ssid=?, wifi_password=?, wifi_security=?, updated_at=? WHERE id=? AND restaurant_id=?")
+			.bind(input.enabled ? 1 : 0, input.ssid, input.security === "nopass" ? null : input.password, input.security, timestamp(), branchId, restaurantId)
+			.run();
+		return (result.meta?.changes ?? 0) > 0;
+	} catch (err) {
+		if (!isMissingColumn(err)) throw err;
+		// Migration 0010 not applied: nothing to save unless the admin is actually turning Wi-Fi on.
+		if (input.enabled || input.ssid || input.password) {
+			throw new Error("Guest Wi-Fi can't be saved until the database is updated (migration 0010).");
+		}
+		const branch = await db.prepare("SELECT id FROM branches WHERE id=? AND restaurant_id=?").bind(branchId, restaurantId).first();
+		return !!branch;
+	}
 }
 
 export async function getCarouselVisibility(restaurantId: string): Promise<boolean> {
 	const { DB: db } = await getCloudflareEnv();
-	const row = await db.prepare("SELECT show_carousel FROM restaurants WHERE id=?").bind(restaurantId).first<{ show_carousel: number }>();
-	return row ? row.show_carousel !== 0 : true;
+	try {
+		const row = await db.prepare("SELECT show_carousel FROM restaurants WHERE id=?").bind(restaurantId).first<{ show_carousel: number }>();
+		return row ? row.show_carousel !== 0 : true;
+	} catch (err) {
+		if (isMissingColumn(err)) return true; // Migration 0009 not applied: carousel stays on, as before.
+		throw err;
+	}
 }
 
 export async function setCarouselVisibility(restaurantId: string, enabled: boolean): Promise<void> {
 	const { DB: db } = await getCloudflareEnv();
-	await db.prepare("UPDATE restaurants SET show_carousel=?, updated_at=? WHERE id=?").bind(enabled ? 1 : 0, timestamp(), restaurantId).run();
+	try {
+		await db.prepare("UPDATE restaurants SET show_carousel=?, updated_at=? WHERE id=?").bind(enabled ? 1 : 0, timestamp(), restaurantId).run();
+	} catch (err) {
+		if (isMissingColumn(err)) throw new Error("The carousel switch needs a database update (migration 0009).");
+		throw err;
+	}
 }
 
 export async function toggleCarouselMedia(restaurantId: string, mediaId: string, active: boolean): Promise<boolean> {
