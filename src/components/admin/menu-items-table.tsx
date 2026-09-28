@@ -14,7 +14,7 @@ import {
 	getSortedRowModel,
 	useReactTable,
 } from "@tanstack/react-table";
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Pencil, Search, SlidersHorizontal, Copy, Check } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, Pencil, Search, SlidersHorizontal, Copy, Check, ImageOff } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -102,6 +102,9 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [status, setStatus] = useState("all");
+	const [onlyMissingPhoto, setOnlyMissingPhoto] = useState(false);
+	const missingPhotoCount = useMemo(() => data.filter((item) => !item.imageId).length, [data]);
+	const rows = useMemo(() => (onlyMissingPhoto ? data.filter((item) => !item.imageId) : data), [data, onlyMissingPhoto]);
 	const statusLabel = status === "all" ? "All statuses" : status === "sold-out" ? "Sold out" : `${status[0].toUpperCase()}${status.slice(1)}`;
 
 	const categoryItemCodes = useMemo(() => {
@@ -145,8 +148,9 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 								/>
 							</div>
 						) : (
-							<div className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
-								{row.original.nameEn.slice(0, 2).toUpperCase()}
+							<div className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-amber-300 bg-amber-50 text-amber-700" title="No photo">
+								<ImageOff className="size-4" aria-hidden="true" />
+								<span className="sr-only">No photo</span>
 							</div>
 						)}
 						<div className="min-w-0">
@@ -213,7 +217,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 	// TanStack Table intentionally returns mutable callbacks; React Compiler safely skips this hook.
 	// eslint-disable-next-line react-hooks/incompatible-library
 	const table = useReactTable({
-		data,
+		data: rows,
 		columns,
 		state: { globalFilter, sorting },
 		onSortingChange: setSorting,
@@ -264,6 +268,29 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 				</div>
 			</div>
 
+			{(missingPhotoCount > 0 || onlyMissingPhoto) && (
+				<div className="flex flex-col gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between">
+					<p className="flex items-start gap-2">
+						<ImageOff className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+						<span>
+							<strong className="font-semibold">
+								{missingPhotoCount} of {data.length} {data.length === 1 ? "item has" : "items have"} no photo.
+							</strong>{" "}
+							Guests are more likely to order dishes they can see.
+						</span>
+					</p>
+					<Button
+						variant="outline"
+						size="sm"
+						className="h-9 shrink-0 border-amber-300 bg-white hover:bg-amber-100"
+						aria-pressed={onlyMissingPhoto}
+						onClick={() => setOnlyMissingPhoto((value) => !value)}
+					>
+						{onlyMissingPhoto ? "Show all items" : "Show only these"}
+					</Button>
+				</div>
+			)}
+
 			{/* Phones and small tablets: stacked cards instead of a 9-column table. */}
 			<ul className="grid gap-3 sm:grid-cols-2 lg:hidden" aria-label="Menu items">
 				{table.getRowModel().rows.map((row) => {
@@ -275,8 +302,8 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 									<Image src={`/api/media/${item.imageId}`} alt="" fill sizes="64px" className="object-cover" />
 								</div>
 							) : (
-								<div className="flex size-16 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary" aria-hidden="true">
-									{item.nameEn.slice(0, 2).toUpperCase()}
+								<div className="flex size-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-amber-300 bg-amber-50 text-amber-700" aria-hidden="true">
+									<ImageOff className="size-5" />
 								</div>
 							)}
 							<div className="min-w-0 flex-1">
@@ -297,6 +324,7 @@ export function MenuItemsTable({ data }: { data: MenuItemRow[] }) {
 								<div className="mt-2 flex flex-wrap items-center gap-1.5">
 									<StatusBadge status={item.status} />
 									{!item.translationComplete && <Badge variant="destructive">Translation missing</Badge>}
+									{!item.imageId && <Badge variant="outline" className="border-amber-300 text-amber-800">No photo</Badge>}
 									<span className="truncate text-xs text-muted-foreground">{item.category}</span>
 								</div>
 								<p className="mt-2 text-sm tabular-nums">
